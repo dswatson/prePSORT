@@ -39,7 +39,7 @@ svobj <- svaseq(dat, mod, mod0)
 
 # Add surrogate variables to clinical factors
 pheno <- cbind(pheno, svobj$sv)
-colnames(pheno)[49:61] <- paste0('SV', 1:13)
+colnames(pheno)[50:63] <- paste0('SV', 1:13)
 
 # Differential expression
 dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ SV1 + SV2 + SV3 + 
