@@ -44,7 +44,7 @@ colnames(pheno)[50:62] <- paste0('SV', 1:13)
 # Differential expression
 dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ SV1 + SV2 + SV3 + 
                                 SV4 + SV5 + SV5 + SV6 + SV7 + SV8 + SV9 + SV10 + 
-                                SV11 + SV12 + SV13 + subject + site)
+                                SV11 + SV12 + SV13 + subject + resp)
 dds <- DESeq(dds)
 res <- na.omit(data.frame(results(dds, filterfun=ihw, 
                contrast=c('resp', 'wk0.L', 'wk0.N'))))
