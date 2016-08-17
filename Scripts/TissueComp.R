@@ -24,10 +24,12 @@ txi <- list(abundance=a, counts=c, length=l, countsFromAbundance='no')
 pheno <- rbind(pheno, pheno)
 pheno$site <- c(rep('L', 30), rep('N', 30))
 pheno$sample <- paste(pheno$sample, pheno$site, sep='.')
+pheno$resp <- paste(pheno$time, pheno$site, sep='.')
 
 # Differential expression
-dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ subject + site)
+dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ subject + resp)
 dds <- DESeq(dds)
-res <- na.omit(data.frame(results(dds, filterfun=ihw)))
+res <- na.omit(data.frame(results(dds, filterfun=ihw, 
+               contrast=c('resp', 'wk0.L', 'wk0.N'))))
 
 

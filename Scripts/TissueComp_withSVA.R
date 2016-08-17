@@ -24,27 +24,29 @@ txi <- list(abundance=a, counts=c, length=l, countsFromAbundance='no')
 pheno <- rbind(pheno, pheno)
 pheno$site <- c(rep('L', 30), rep('N', 30))
 pheno$sample <- paste(pheno$sample, pheno$site, sep='.')
+pheno$resp <- paste(pheno$time, pheno$site, sep='.')
 
 # Normalise and filter data before running SVA
-dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ subject + site)
+dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ subject + resp)
 dds <- estimateSizeFactors(dds)
 dat <- counts(dds, normalized=TRUE)
 dat <- dat[rowVars(dat) > 1, ]
 
 # Run SVA
-mod <- model.matrix(~ subject + site, data=pheno)
+mod <- model.matrix(~ subject + resp, data=pheno)
 mod0 <- model.matrix(~ subject, data=pheno)
 svobj <- svaseq(dat, mod, mod0)
 
 # Add surrogate variables to clinical factors
 pheno <- cbind(pheno, svobj$sv)
-colnames(pheno)[49:62] <- paste0('SV', 1:14)
+colnames(pheno)[49:61] <- paste0('SV', 1:13)
 
 # Differential expression
 dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ SV1 + SV2 + SV3 + 
                                 SV4 + SV5 + SV5 + SV6 + SV7 + SV8 + SV9 + SV10 + 
-                                SV11 + SV12 + SV13 + SV14 + subject + site)
+                                SV11 + SV12 + SV13 + subject + site)
 dds <- DESeq(dds)
-res <- na.omit(data.frame(results(dds, filterfun=ihw)))
+res <- na.omit(data.frame(results(dds, filterfun=ihw, 
+               contrast=c('resp', 'wk0.L', 'wk0.N'))))
 
 
