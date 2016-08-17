@@ -3,7 +3,6 @@
 # Load libraries
 library(readr)
 library(tximport)
-library(sva)
 library(DESeq2)
 library(dplyr)
 
