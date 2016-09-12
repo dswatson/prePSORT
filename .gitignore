@@ -9,6 +9,6 @@ Blood/
 LesionalSkin/
 NonlesionalSkin/
 Clinical_factors_Pre_PSORT_Amy_v7_15_8_16.csv
-Transcripts.tsv
+Ensembl.Hs79.csv
 Analysis.Rmd
 limmaVoom_pipeline.R
