@@ -11,5 +11,8 @@ NonlesionalSkin/
 Clinical_factors_Pre_PSORT_Amy_v7_15_8_16.csv
 Ensembl.Hs79.Tx.csv
 Ensembl.Hs79.GeneSymbols.csv
-Analysis.Rmd
+Homo_sapiens.GRCh38.79.sqlite
+Baseline.Rmd
+David.html
+WGCNA.R
 limmaVoom_pipeline.R
