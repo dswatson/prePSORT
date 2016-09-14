@@ -1,4 +1,4 @@
-Adalimumab Data 
+Adalimumab Data
 ================
 Preliminary Review and Concerns
 -------------------------------
@@ -95,16 +95,16 @@ dat <- data.frame(Batch = rep(pheno$batch, each=512), gather(data.frame(X), Samp
                   Density = gather(data.frame(Y), Sample, Density) %>% select(Density))
 
 # Plot results
-ggplot(dat, aes(lCounts, Density, colour=Batch)) + geom_line(size=0.5) + 
-  theme(legend.justification=c(1, 1), legend.position=c(1, 1)) + theme_bw() +
-  labs(title='Density Plot', x=expression('log'[2]*'(Counts + 1)'))
+ggplot(dat, aes(lCounts, Density, colour=Batch)) + geom_path() + 
+   theme_bw() + geom_hline(yintercept=0, colour='white', size=4) + 
+   labs(title='Density Plot', x=expression('log'[2]*'(Counts + 1)'))
 ```
 
 <p align='center'>
 <img src="Adalimumab_EDA_files/figure-markdown_github/dens-1.png" style="display: block; margin: auto;" />
 </p>
 
-It appears from this figure that there is considerable intra- and inter-batch variation in these data.
+It appears from this figure that the data follow an unusual bimodal distribution with considerable intra- and inter-batch variation.
 
 Box Plot
 --------
