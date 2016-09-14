@@ -7,7 +7,10 @@ library(dplyr)
 
 # Prep data
 pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE)
-pheno <- filter(pheno, time == 'wk0')
+pheno <- filter(pheno, time != 'wk12')
+pheno <- pheno %>%
+  mutate(wk0.Delta_PASI = ifelse(time == 'wk0', Delta_PASI, 0),
+         wk1.Delta_PASI = ifelse(time == 'wk1', Delta_PASI, 0))
 t2g <- fread('Ensembl.Hs79.Tx.csv')
 e2g <- fread('Ensembl.Hs79.GeneSymbols.csv')
 
@@ -26,21 +29,23 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   mat <- mat[rowMeans(mat) > 1, ] 
 
   # Run SVA
-  mod <- model.matrix(~ sex + age + bmi + Delta_PASI, data=pheno)
-  mod0 <- model.matrix(~ sex + age + bmi, data=pheno)
+  mod <- model.matrix(~ 0 + subject + time + wk1.Delta_PASI, data=pheno)
+  mod0 <- model.matrix(~ 0 + subject + time, data=pheno)
   svobj <- svaseq(mat, mod, mod0)
   des <- cbind(mod, svobj$sv)
 
   # Differential expression
   dds <- estimateDispersions(dds, modelMatrix=des, maxit=1000)
   dds <- nbinomWaldTest(dds, betaPrior=FALSE, modelMatrix=des, maxit=1000)
-  res <- data.frame(results(dds, name='Delta_PASI', filterfun=ihw))
+  res <- data.frame(results(dds, name='wk1.Delta_PASI', filterfun=ihw))
   eid <- rownames(res)
   res <- res %>%
     mutate(gene_id = eid) %>%
     inner_join(e2g, by='gene_id') %>%
     arrange(pvalue) %>%
     select(gene_name, baseMean:padj)
-  write.csv(res, paste0('Baseline_', tissue, '.csv'), row.names=FALSE)
+  write.csv(res, paste0('wk0_wk1,', tissue, '.csv'), row.names=FALSE)
 
 }
+
+
