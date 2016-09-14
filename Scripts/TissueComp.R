@@ -1,15 +1,18 @@
 ### LESIONAL VS. NONLESIONAL SKIN ###
 
 # Load libraries
-library(readr)
+library(data.table)
 library(tximport)
+library(sva)
 library(DESeq2)
 library(dplyr)
 
-# Import data
-setwd('/Users/David/Documents/QMUL/PSORT')
-pheno <- read.csv('Clinical_factors_Pre_PSORT_Amy_v7_15_8_16.csv')
-t2g <- read_tsv('Transcripts.tsv')
+# Prep data
+pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE)
+t2g <- fread('Ensembl.Hs79.Tx.csv')
+e2g <- fread('Ensembl.Hs79.GeneSymbols.csv')
+
+
 dir_L <- paste(getwd(), 'LesionalSkin', sep='/')
 files_L <- file.path(dir_L, pheno$sample, 'abundance.tsv')
 txi_L <- tximport(files_L, type='kallisto', tx2gene=t2g, reader=read_csv)
@@ -25,8 +28,25 @@ pheno$site <- c(rep('L', 30), rep('N', 30))
 pheno$sample <- paste(pheno$sample, pheno$site, sep='.')
 pheno$resp <- paste(pheno$time, pheno$site, sep='.')
 
-# Differential expression
+# Normalise and filter data before running SVA
 dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ subject + resp)
+dds <- estimateSizeFactors(dds)
+dat <- counts(dds, normalized=TRUE)
+dat <- dat[rowVars(dat) > 1, ]
+
+# Run SVA
+mod <- model.matrix(~ subject + resp, data=pheno)
+mod0 <- model.matrix(~ subject, data=pheno)
+svobj <- svaseq(dat, mod, mod0)
+
+# Add surrogate variables to clinical factors
+pheno <- cbind(pheno, svobj$sv)
+colnames(pheno)[50:62] <- paste0('SV', 1:13)
+
+# Differential expression
+dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ SV1 + SV2 + SV3 + 
+                                SV4 + SV5 + SV5 + SV6 + SV7 + SV8 + SV9 + SV10 + 
+                                SV11 + SV12 + SV13 + subject + resp)
 dds <- DESeq(dds)
 res <- na.omit(data.frame(results(dds, filterfun=ihw, 
                contrast=c('resp', 'wk0.L', 'wk0.N'))))
