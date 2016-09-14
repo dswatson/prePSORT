@@ -1,6 +1,7 @@
 Adalimumab Data: 
-Preliminary Review and Concerns
 ================
+Preliminary Review and Concerns
+-------------------------------
 
 -   [Preprocessing](#preprocessing)
 -   [Diagnostic Plots](#diagnostic-plots)
