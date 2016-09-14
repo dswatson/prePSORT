@@ -1,4 +1,4 @@
-Adalimumab Data: 
+Adalimumab Data 
 ================
 Preliminary Review and Concerns
 -------------------------------
