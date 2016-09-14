@@ -6,9 +6,8 @@ library(DESeq2)
 library(dplyr)
 
 # Prep data
-pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE)
-pheno <- filter(pheno, time != 'wk1')
-pheno <- pheno %>%
+pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE) %>%
+  filter(time != 'wk1') %>%
   mutate(wk0.Delta_PASI = ifelse(time == 'wk0', Delta_PASI, 0),
          wk12.Delta_PASI = ifelse(time == 'wk12', Delta_PASI, 0))
 t2g <- fread('Ensembl.Hs79.Tx.csv')
