@@ -93,7 +93,7 @@ ggplot(pasi, aes(rank(DeltaPASI), DeltaPASI, label=Subject)) + geom_text() +
 ```
 
 <p align='center'>
-<img src="Analysis_files/figure-markdown_github/deltpas-1.png" style="display: block; margin: auto;" />
+<img src="Intro_files/figure-markdown_github/deltpas-1.png" style="display: block; margin: auto;" />
 </p>
 
 This plot, in conjunction with the fact that a single clinician recorded every PASI score in our dataset, led us to conclude that we should analyse response on a continuous scale.
@@ -114,7 +114,7 @@ ggplot(pasi, aes(Baseline, TwelveWeek, label=Subject)) + geom_text() +
 ```
 
 <p align='center'>
-<img src="Analysis_files/figure-markdown_github/deltpas2-1.png" style="display: block; margin: auto;" />
+<img src="Intro_files/figure-markdown_github/deltpas2-1.png" style="display: block; margin: auto;" />
 </p>
 
 This plot indicates that patient improvement was roughly linear in our study, albeit with a notable outlier in patient AFOX09. The blue regression line has a slope of about .31, suggesting a least squares estimate of 69% expected improvement in PASI. (This number is closer to 72% if subject AFOX09 is removed.)
@@ -129,7 +129,7 @@ ggplot(pasi, aes(Baseline, DeltaPASI, label=Subject)) + geom_text() +
 ```
 
 <p align='center'>
-<img src="Analysis_files/figure-markdown_github/deltpas3-1.png" style="display: block; margin: auto;" />
+<img src="Intro_files/figure-markdown_github/deltpas3-1.png" style="display: block; margin: auto;" />
 </p>
 
 ``` r
@@ -284,5 +284,5 @@ g4 <- ggplot(top, aes(DeltaPASI, ESAM, colour=Time)) + geom_point() +
 grid.arrange(g1, g2, g3, g4, nrow=2, ncol=2)
 ```
 <p align='center'>
-<img src="Analysis_files/figure-markdown_github/expr-1.png" style="display: block; margin: auto;" />
+<img src="Intro_files/figure-markdown_github/expr-1.png" style="display: block; margin: auto;" />
 </p>
