@@ -1,4 +1,4 @@
-Adalimumab Data
+Adalimumab Data 
 ================
 Preliminary Review and Concerns
 -------------------------------
@@ -34,12 +34,11 @@ Reads were pseudo-aligned using [kallisto](http://www.nature.com/nbt/journal/v34
 
 ``` r
 # Read in clinical data
-pheno <- read.csv('Adalimumab_LS_clin.csv', stringsAsFactors=FALSE)
+pheno <- fread(paste0(getwd(), '/Data/Adalimumab/LS/Adalimumab_LS_clin.csv'))
 
 # Create gene-level count matrix
-t2g <- fread('Ensembl.Hs79.Tx.csv')
-dir <- paste0(getwd(), '/Adalimumab/LS')
-files <- file.path(dir, pheno$Count_file, 'MB.abundance.tsv')
+t2g <- fread(paste0(getwd(), '/Data/Ensembl.Hs79.Tx.csv'))
+files <- file.path(paste0(getwd(), '/Data/Adalimumab/LS'), pheno$Count_file, 'MB.abundance.tsv')
 txi <- tximport(files, type='kallisto', tx2gene=t2g, reader=fread)
 ```
 
@@ -59,7 +58,7 @@ This removed about a third of all genes, leaving just under 26,000 for downstrea
 Normalisation
 -------------
 
-Count matrices were log-transformed for density plots and box plots. For PCA and subject similarity heatmaps, we used the regularised logarithm transform of [Love et al. (2014)](http://www.ncbi.nlm.nih.gov/pubmed/25516281).
+Count matrices were log-transformed for density plots and box plots. For PCA and subject similarity heatmaps, we used the regularised logarithm transform of [Love et al. (2014)](http://www.ncbi.nlm.nih.gov/pubmed/25516281), which adjusts for library size.
 
 ``` r
 # Log transform
@@ -91,39 +90,57 @@ X <- Y <- matrix(0, 512, ncol(lmat))
     Y[, j] <- d$y
   }
 
-dat <- data.frame(Batch = rep(pheno$batch, each=512), gather(data.frame(X), Sample, lCounts),
+dat <- data.frame(Batch = rep(pheno$batch, each=512), gather(data.frame(X), Sample, Expr),
                   Density = gather(data.frame(Y), Sample, Density) %>% select(Density))
 
 # Plot results
-ggplot(dat, aes(lCounts, Density, colour=Batch)) + geom_path() + 
+ggplot(dat, aes(Expr, Density, colour=Batch)) + geom_path() + 
    theme_bw() + geom_hline(yintercept=0, colour='white', size=4) + 
-   labs(title='Density Plot', x=expression('log'[2]*'(Counts + 1)'))
+   labs(title='Expression By Batch', x=expression('log'[2]*'(Counts + 1)'))
 ```
 
 <p align='center'>
-<img src="Adalimumab_EDA_files/figure-markdown_github/dens-1.png" style="display: block; margin: auto;" />
+<img src="Adalimumab_EDA_files/figure-markdown_github/dens, fig.-1.png" style="display: block; margin: auto;" />
 </p>
 
 It appears from this figure that the data follow an unusual bimodal distribution with considerable intra- and inter-batch variation.
 
-Box Plot
---------
+Box Plots
+---------
 
 Batch effects can also be detected from a box plot of the log-normalised counts.
 
 ``` r
 # Shape data
 dat <- data.frame(Batch = rep(pheno$batch, each=nrow(lmat)),
-                  gather(data.frame(lmat), Sample, lCounts))
+                  gather(data.frame(lmat), Sample, Expr))
 
 # Plot results
-ggplot(dat, aes(Sample, lCounts, fill=Batch)) + geom_boxplot() + 
-  labs(title='Box Plot', y=expression('log'[2]*'(Counts + 1)')) + theme_bw()
+ggplot(dat, aes(Sample, Expr, fill=Batch)) + geom_boxplot() + 
+  labs(title='Expression By Batch', y=expression('log'[2]*'(Counts + 1)')) + theme_bw()
 ```
 
 <p align='center'>
 <img src="Adalimumab_EDA_files/figure-markdown_github/box-1.png" style="display: block; margin: auto;" />
 </p>
+
+These figures suggest significant variability across batches. Since our `lmat` matrix ignores library size, the results could be a product of sequencing depth.
+
+``` r
+# Shape data
+dat <- data.frame(Batch = pheno$batch,
+                  LibSize = colSums(lmat))
+
+# Plot results
+ggplot(dat, aes(Batch, LibSize, fill=Batch)) + geom_boxplot() + 
+  labs(title='Library Size By Batch', y='Library Size') + theme_bw()
+```
+
+<p align='center'>
+<img src="Adalimumab_EDA_files/figure-markdown_github/box2-1.png" style="display: block; margin: auto;" />
+</p>
+
+Indeed, there is a clear pattern of dependence between library size and batch. To try and overcome these effects, we use the rlog variance stabilising transform, which adjusts for sequencing depth.
 
 Principal Component Analysis
 ----------------------------
@@ -146,6 +163,8 @@ ggplot(dat, aes(PC1, PC2, colour=Batch, shape=Batch)) + geom_point() +
 <p align='center'>
 <img src="Adalimumab_EDA_files/figure-markdown_github/pca-1.png" style="display: block; margin: auto;" />
 </p>
+
+Even using the `rld` matrix, batch effects persist.
 
 Sample Similarity Heatmap
 -------------------------
