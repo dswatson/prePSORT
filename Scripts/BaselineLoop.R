@@ -6,8 +6,8 @@ library(DESeq2)
 library(dplyr)
 
 # Prep data
-pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE)
-pheno <- filter(pheno, time == 'wk0')
+pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE) %>%
+  filter(time == 'wk0')
 t2g <- fread('Ensembl.Hs79.Tx.csv')
 e2g <- fread('Ensembl.Hs79.GeneSymbols.csv')
 
@@ -44,3 +44,5 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   write.csv(res, paste0('Baseline_', tissue, '.csv'), row.names=FALSE)
 
 }
+
+
