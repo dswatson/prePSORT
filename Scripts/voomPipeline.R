@@ -78,26 +78,4 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
 }
 
 
-for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
-
-  top <- fread(paste0(getwd(), '/Results/Baseline,', tissue, '_voom.csv'))
-  print(sum(top$q.value < 0.05))
-  top <- fread(paste0(getwd(), '/Results/wk0_wk1,', tissue, '_voom.csv'))
-  print(sum(top$q.value < 0.05))
-  top <- fread(paste0(getwd(), '/Results/wk0_wk12,', tissue, '_voom.csv'))
-  print(sum(top$q.value < 0.05))
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
 
