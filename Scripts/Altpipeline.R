@@ -6,15 +6,15 @@ library(DESeq2)
 library(dplyr)
 
 # Prep data
-pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE)
-t2g <- fread('Ensembl.Hs79.Tx.csv')
-e2g <- fread('Ensembl.Hs79.GeneSymbols.csv')
+pheno <- read.csv(paste0(getwd(), '/Data/Clinical.csv'), stringsAsFactors=FALSE)
+t2g <- fread(paste0(getwd(), '/Data/Ensembl.Hs79.Tx.csv'))
+e2g <- fread(paste0(getwd(), '/Data/Ensembl.Hs79.GeneSymbols.csv'))
 
 # Loop
 for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
 
   # TxImport
-  dir <- paste(getwd(), tissue, sep='/')
+  dir <- paste(getwd(), 'Data', tissue, sep='/')
   files <- file.path(dir, pheno$sample, 'MB.abundance.tsv')
   txi <- tximport(files, type='kallisto', tx2gene=t2g, reader=fread)
 
@@ -44,7 +44,7 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
     inner_join(e2g, by='gene_id') %>%
     arrange(pvalue) %>%
     select(gene_name, baseMean:padj)
-  write.csv(res, paste0('Baseline,', tissue, '.csv'), row.names=FALSE)
+  fwrite(res, paste0('Baseline,', tissue, '.csv'))
 
   # One week change
   res <- data.frame(results(dds, contrast=list('wk0.DeltaPASI', 'wk1.DeltaPASI'), filterfun=ihw))
@@ -54,7 +54,7 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
     inner_join(e2g, by='gene_id') %>%
     arrange(pvalue) %>%
     select(gene_name, baseMean:padj)
-  write.csv(res, paste0('wk0_wk1,', tissue, '.csv'), row.names=FALSE)
+  fwrite(res, paste0('wk0_wk1,', tissue, '.csv'))
 
   # Twelve week change
   res <- data.frame(results(dds, contrast=list('wk0.DeltaPASI', 'wk12.DeltaPASI'), filterfun=ihw))
@@ -64,7 +64,7 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
     inner_join(e2g, by='gene_id') %>%
     arrange(pvalue) %>%
     select(gene_name, baseMean:padj)
-  write.csv(res, paste0('wk0_wk12,', tissue, '.csv'), row.names=FALSE)
+  fwrite(res, paste0('wk0_wk12,', tissue, '.csv'))
 
 }
 
