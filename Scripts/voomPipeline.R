@@ -37,7 +37,7 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
                                          paste0('SV', 1:svobj$n.sv))
 
   # Build linear voom model
-  v <- voom(txi$counts[keep, ], des, normalize.method='quantile')
+  v <- voomWithQualityWeights(txi$counts[keep, ], des, normalize.method='quantile')
   fit <- lmFit(v, des)
   fit2 <- eBayes(fit, robust=TRUE)
 
@@ -76,5 +76,28 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   fwrite(top, paste0(getwd(), '/Results/wk0_wk12,', tissue, '_voom.csv'))
 
 }
+
+
+for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
+
+  top <- fread(paste0(getwd(), '/Results/Baseline,', tissue, '_voom.csv'))
+  print(sum(top$q.value < 0.05))
+  top <- fread(paste0(getwd(), '/Results/wk0_wk1,', tissue, '_voom.csv'))
+  print(sum(top$q.value < 0.05))
+  top <- fread(paste0(getwd(), '/Results/wk0_wk12,', tissue, '_voom.csv'))
+  print(sum(top$q.value < 0.05))
+
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
