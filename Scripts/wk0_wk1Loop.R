@@ -6,7 +6,7 @@ library(DESeq2)
 library(dplyr)
 
 # Prep data
-pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE) %>%
+pheno <- read.csv('PrePSORT_Clinical.csv', stringsAsFactors=FALSE) %>%
   filter(time != 'wk12') %>%
   mutate(wk0.Delta_PASI = ifelse(time == 'wk0', Delta_PASI, 0),
          wk1.Delta_PASI = ifelse(time == 'wk1', Delta_PASI, 0))

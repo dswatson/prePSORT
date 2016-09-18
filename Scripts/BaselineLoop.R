@@ -6,7 +6,7 @@ library(DESeq2)
 library(dplyr)
 
 # Prep data
-pheno <- read.csv('Clinical.csv', stringsAsFactors=FALSE) %>%
+pheno <- read.csv('PrePSORT_Clinical.csv', stringsAsFactors=FALSE) %>%
   filter(time == 'wk0')
 t2g <- fread('Ensembl.Hs79.Tx.csv')
 e2g <- fread('Ensembl.Hs79.GeneSymbols.csv')
