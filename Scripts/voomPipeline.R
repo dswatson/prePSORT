@@ -1,7 +1,6 @@
 # Load libraries
 library(data.table)
 library(tximport)
-library(DESeq2)
 library(edgeR)
 library(sva)
 library(limma)
@@ -9,7 +8,7 @@ library(qvalue)
 library(dplyr)
 
 # Prep data
-pheno <- fread(paste0(getwd(), '/Data/Clinical.csv'))
+pheno <- fread(paste0(getwd(), '/Data/PrePSORT_Clinical.csv'))
 t2g <- fread(paste0(getwd(), '/Data/Ensembl.Hs79.Tx.csv'))
 e2g <- fread(paste0(getwd(), '/Data/Ensembl.Hs79.GeneSymbols.csv'))
 
@@ -19,26 +18,26 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   # TxImport
   dir <- paste(getwd(), 'Data', tissue, sep='/')
   files <- file.path(dir, pheno$sample, 'MB.abundance.tsv')
-  txi <- tximport(files, type='kallisto', tx2gene=t2g, reader=fread)
+  txi <- tximport(files, type='kallisto', tx2gene=t2g, reader=fread, 
+                  countsFromAbundance='lengthScaledTPM')
   keep <- rowSums(cpm(txi$counts) > 1) >= 3
-
-  # Filter, normalize
-  dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ 1)
-  dds <- estimateSizeFactors(dds)
-  mat <- counts(dds, normalized=TRUE)
-  mat <- mat[keep, ] 
+  y <- DGEList(txi$counts[keep, ])
+  y <- calcNormFactors(y)
 
   # Run SVA
-  mod <- model.matrix(~ sex + age + bmi + time:Delta_PASI, data=pheno)
-  mod0 <- model.matrix(~ sex + age + bmi, data=pheno)
-  svobj <- svaseq(mat, mod, mod0)
+  mod <- model.matrix(~ 0 + sex + age + bmi + time:Delta_PASI, data=pheno)
+  mod0 <- model.matrix(~ 0 + sex + age + bmi, data=pheno)
+  svobj <- svaseq(cpm(y), mod, mod0)
   des <- cbind(mod, svobj$sv)
   colnames(des)[5:(7 + svobj$n.sv)] <- c('wk0.DeltaPASI', 'wk1.DeltaPASI', 'wk12.DeltaPASI', 
                                          paste0('SV', 1:svobj$n.sv))
 
   # Build linear voom model
-  v <- voomWithQualityWeights(txi$counts[keep, ], des, normalize.method='quantile')
-  fit <- lmFit(v, des)
+  v <- voom(y, des)
+  corfit <- duplicateCorrelation(v, des, block=pheno$subject)
+  v <- voom(y, des, correlation=corfit$consensus, block=pheno$subject)
+  corfit <- duplicateCorrelation(v, des, block=pheno$subject)
+  fit <- lmFit(v, des, correlation=corfit$consensus, block=pheno$subject)
   fit2 <- eBayes(fit, robust=TRUE)
 
   # Baseline
@@ -76,6 +75,5 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   fwrite(top, paste0(getwd(), '/Results/wk0_wk12,', tissue, '_voom.csv'))
 
 }
-
 
 
