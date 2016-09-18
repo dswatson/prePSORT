@@ -74,7 +74,7 @@ colnames(lmat) <- colnames(rld) <- c(paste0('S0', 1:9), paste0('S', 10:24))
 Diagnostic Plots
 ================
 
-Following preprocessing, we performed a variety of exploratory data anlyses to search for outliers, check for batch effects, and ensure data quality.
+Following preprocessing, we performed a variety of exploratory data analyses to search for outliers, check for batch effects, and ensure data quality.
 
 Density Plot
 ------------
@@ -98,7 +98,9 @@ ggplot(dat, aes(Expr, Density, group=Sample, colour=Batch)) + geom_path() +
    labs(title='Expression By Batch', x=expression('log'[2]*'(Counts + 1)')) + theme_bw()
 ```
 
+<p align='center'>
 <img src="Adalimumab_EDA_files/figure-markdown_github/dens, fig.-1.png" style="display: block; margin: auto;" />
+</p>
 
 It appears from this figure that the data follow an unusual bimodal distribution with considerable intra- and inter-batch variation.
 
@@ -117,7 +119,9 @@ ggplot(dat, aes(Sample, Expr, fill=Batch)) + geom_boxplot() +
   labs(title='Expression By Batch', y=expression('log'[2]*'(Counts + 1)')) + theme_bw()
 ```
 
+<p align='center'>
 <img src="Adalimumab_EDA_files/figure-markdown_github/box-1.png" style="display: block; margin: auto;" />
+</p>
 
 These figures suggest significant variability across batches. Since our `lmat` matrix ignores library size, the results could be a product of sequencing depth.
 
@@ -131,7 +135,9 @@ ggplot(dat, aes(Batch, LibSize, fill=Batch)) + geom_boxplot() +
   labs(title='Library Size By Batch', y='Library Size') + theme_bw()
 ```
 
+<p align='center'>
 <img src="Adalimumab_EDA_files/figure-markdown_github/box2-1.png" style="display: block; margin: auto;" />
+</p>
 
 Indeed, there is a clear pattern of dependence between library size and batch. To try and overcome these effects, we use the rlog variance stabilising transform, which adjusts for sequencing depth.
 
@@ -153,7 +159,9 @@ ggplot(dat, aes(PC1, PC2, colour=Batch, shape=Batch)) + geom_point() +
   labs(title='PCA', x=paste0('PC1 (', imp1, '%)'), y=paste0('PC2 (', imp2, '%)')) + theme_bw()
 ```
 
+<p align='center'>
 <img src="Adalimumab_EDA_files/figure-markdown_github/pca-1.png" style="display: block; margin: auto;" />
+</p>
 
 Even using the `rld` matrix, batch effects persist.
 
@@ -174,7 +182,9 @@ aheatmap(dm, col=rb, Rowv=FALSE, annCol=list(Batch = pheno$batch),
   distfun=function(x) as.dist(x), hclustfun='average', main='Sample Similarity Heatmap')
 ```
 
+<p align='center'>
 <img src="Adalimumab_EDA_files/figure-markdown_github/samplesim-1.png" style="display: block; margin: auto;" />
+</p>
 
 Strong batch effects do not necessarily doom a study's results. Batch is often included as a covariate in regression models ([Akey et al., 2007](http://www.nature.com/ng/journal/v39/n7/full/ng0707-807.html)), or else explicitly adjusted for using the popular ComBat method of [Johnson & Li (2006)](http://biostatistics.oxfordjournals.org/content/8/1/118.abstract). Unfortunately, neither alternative is available to us in this case, as batch is 100% confounded with the other variables in our intended design matrix. To be effectively removed, batches must be (approximately) balanced across subjects and time points. Nesting clinical covariates within a batch makes it mathematically impossible to distinguish between biological signal and technical artefact.
 
