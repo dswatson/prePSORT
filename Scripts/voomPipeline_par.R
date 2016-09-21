@@ -27,7 +27,7 @@ loop <- function(tissue) {
   y <- DGEList(txi$counts[keep, ])
   y <- calcNormFactors(y)
 
-  ### Baseline ###
+  ### Week Zero ###
 
   # SVA
   mod <- model.matrix(~ 0 + time + sex + age + bmi +
@@ -50,11 +50,42 @@ loop <- function(tissue) {
     inner_join(e2g, by='gene_id') %>%
     rename(p.value = P.Value, 
            AvgExpr = AveExpr,
-           Gene = gene_name) %>%
-    select(Gene, AvgExpr, logFC, p.value, q.value)
+           GeneSymbol = gene_name,
+           EnsemblID = gene_id) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0.txt'), sep='\t')
 
-  ### One week change ###
+  ### Week One ###
+
+  # Extract
+  top <- topTable(fit, coef='wk1.DeltaPASI', number=Inf, sort.by='p')
+  id <- rownames(top)
+  top <- top %>%
+    mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    inner_join(e2g, by='gene_id') %>%
+    rename(p.value = P.Value, 
+           AvgExpr = AveExpr,
+           GeneSymbol = gene_name,
+           EnsemblID = gene_id) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk1.txt'), sep='\t')
+  
+  ### Week Twelve ###
+
+  # Extract
+    top <- topTable(fit, coef='wk12.DeltaPASI', number=Inf, sort.by='p')
+  id <- rownames(top)
+  top <- top %>%
+    mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    inner_join(e2g, by='gene_id') %>%
+    rename(p.value = P.Value, 
+           AvgExpr = AveExpr,
+           GeneSymbol = gene_name,
+           EnsemblID = gene_id) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk12.txt'), sep='\t')
+
+  ### One Week Change ###
 
   # SVA
   mod <- model.matrix(~ 0 + time + subject + wk0.DeltaPASI + wk1.DeltaPASI, data=pheno)
@@ -83,11 +114,44 @@ loop <- function(tissue) {
     inner_join(e2g, by='gene_id') %>%
     rename(p.value = P.Value, 
            AvgExpr = AveExpr,
-           Gene = gene_name) %>%
-    select(Gene, AvgExpr, logFC, p.value, q.value)
+           GeneSymbol = gene_name,
+           EnsemblID = gene_id) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0-wk1.txt'), sep='\t')
 
-  ### Twelve week change ###
+  ### Eleven Week Change ###
+
+  # SVA
+  mod <- model.matrix(~ 0 + time + subject + wk1.DeltaPASI + wk12.DeltaPASI, data=pheno)
+  mod0 <- model.matrix(~ 0 + time + subject, data=pheno)
+  svobj <- svaseq(cpm(y), mod, mod0)
+  des <- cbind(mod2, svobj$sv)                                                           
+  colnames(des)[10:ncol(des)] <- paste0('SV', 1:svobj$n.sv) 
+
+  # Voom
+  v <- voom(y, des)
+  corfit <- duplicateCorrelation(v, des, block=pheno$subject)
+  v <- voom(y, des, correlation=corfit$consensus, block=pheno$subject)
+  corfit <- duplicateCorrelation(v, des, block=pheno$subject)
+  fit <- lmFit(v, des, correlation=corfit$consensus, block=pheno$subject)
+  cm <- makeContrasts('wk1-wk12' = wk12.DeltaPASI - wk1.DeltaPASI, levels=des)
+  fit <- contrasts.fit(fit, cm)
+  fit <- eBayes(fit, robust=TRUE)
+
+  # Extract
+  top <- topTable(fit, coef='wk1-wk12', number=Inf, sort.by='p')
+  id <- rownames(top)
+  top <- top %>%
+    mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    inner_join(e2g, by='gene_id') %>%
+    rename(p.value = P.Value, 
+           AvgExpr = AveExpr,
+           GeneSymbol = gene_name,
+           EnsemblID = gene_id) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk1-wk12.txt'), sep='\t')
+
+  ### Twelve Week Change ###
 
   # SVA
   mod <- model.matrix(~ 0 + time + subject + wk0.DeltaPASI + wk12.DeltaPASI, data=pheno)
@@ -113,8 +177,9 @@ loop <- function(tissue) {
     inner_join(e2g, by='gene_id') %>%
     rename(p.value = P.Value, 
            AvgExpr = AveExpr,
-           Gene = gene_name) %>%
-    select(Gene, AvgExpr, logFC, p.value, q.value)
+           GeneSymbol = gene_name,
+           EnsemblID = gene_id) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0-wk12.txt'), sep='\t')
 
 }
