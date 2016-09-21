@@ -11,14 +11,11 @@ NonlesionalSkin/
 Adalimumab/
 PrePSORT_Clinical.csv
 Adalimumab_LS_clin.csv
-SomaScan.csv
 Ensembl.Hs79.Tx.csv
 Ensembl.Hs79.GeneSymbols.csv
 Homo_sapiens.GRCh38.79.sqlite
 Baseline.Rmd
-David.html
 WGCNA.R
-limmaVoom_pipeline.R
 Adalimumab_EDA.Rmd
 Proteomics_EDA.Rmd
 Proteomics_EDA.R
