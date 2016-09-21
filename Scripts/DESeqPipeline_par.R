@@ -48,9 +48,14 @@ loop <- function(tissue) {
   res <- res %>%
     mutate(gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    arrange(pvalue) %>%
-    select(gene_name, baseMean:padj)
-  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0.csv'))
+    rename(Gene = gene_name, 
+           AvgExpr = baseMean,
+           logFC = log2FoldChange, 
+           p.value = pvalue,
+           q.value = padj) %>%
+    arrange(p.value) %>%
+    select(Gene, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0.txt'), sep='\t')
 
   ### One week change ###
 
@@ -79,9 +84,14 @@ loop <- function(tissue) {
   res <- res %>%
     mutate(gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    arrange(pvalue) %>%
-    select(gene_name, baseMean:padj)
-  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0-wk1.csv'))
+    rename(Gene = gene_name, 
+           AvgExpr = baseMean,
+           logFC = log2FoldChange, 
+           p.value = pvalue,
+           q.value = padj) %>%
+    arrange(p.value) %>%
+    select(Gene, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0-wk1.txt'), sep='\t')
 
   ### Twelve week change ###
 
@@ -110,9 +120,14 @@ loop <- function(tissue) {
   res <- res %>%
     mutate(gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    arrange(pvalue) %>%
-    select(gene_name, baseMean:padj)
-  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0-wk12.csv'))
+    rename(Gene = gene_name, 
+           AvgExpr = baseMean,
+           logFC = log2FoldChange, 
+           p.value = pvalue,
+           q.value = padj) %>%
+    arrange(p.value) %>%
+    select(Gene, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0-wk12.txt'), sep='\t')
 
 }
 

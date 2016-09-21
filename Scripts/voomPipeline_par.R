@@ -48,9 +48,11 @@ loop <- function(tissue) {
   top <- top %>%
     mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    rename(p.value = P.Value, Gene = gene_name) %>%
-    select(Gene, logFC:p.value, q.value, B)
-  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0.csv'))
+    rename(p.value = P.Value, 
+           AvgExpr = AveExpr,
+           Gene = gene_name) %>%
+    select(Gene, AvgExpr, logFC, p.value, q.value)
+  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0.txt'), sep='\t')
 
   ### One week change ###
 
@@ -59,7 +61,7 @@ loop <- function(tissue) {
   mod0 <- model.matrix(~ 0 + time + subject, data=pheno)
   svobj <- svaseq(cpm(y), mod, mod0)
   mod2 <- model.matrix(~ 0 + time + sex + age + bmi + 
-                      wk0.DeltaPASI + wk1.DeltaPASI + wk12.DeltaPASI, data=pheno) 
+                       wk0.DeltaPASI + wk1.DeltaPASI + wk12.DeltaPASI, data=pheno) 
   des <- cbind(mod2, svobj$sv)                                                           
   colnames(des)[10:ncol(des)] <- paste0('SV', 1:svobj$n.sv) 
 
@@ -79,9 +81,11 @@ loop <- function(tissue) {
   top <- top %>%
     mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    rename(p.value = P.Value, Gene = gene_name) %>%
-    select(Gene, logFC:p.value, q.value, B)
-  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0-wk1.csv'))
+    rename(p.value = P.Value, 
+           AvgExpr = AveExpr,
+           Gene = gene_name) %>%
+    select(Gene, AvgExpr, logFC, p.value, q.value)
+  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0-wk1.txt'), sep='\t')
 
   ### Twelve week change ###
 
@@ -107,9 +111,11 @@ loop <- function(tissue) {
   top <- top %>%
     mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    rename(p.value = P.Value, Gene = gene_name) %>%
-    select(Gene, logFC:p.value, q.value, B)
-  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0-wk12.csv'))
+    rename(p.value = P.Value, 
+           AvgExpr = AveExpr,
+           Gene = gene_name) %>%
+    select(Gene, AvgExpr, logFC, p.value, q.value)
+  fwrite(top, paste0(getwd(), '/Results/voom_', tissue, ',wk0-wk12.txt'), sep='\t')
 
 }
 
