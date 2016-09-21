@@ -20,7 +20,7 @@ loop <- function(tissue) {
   library(BiocParallel)
   register(MulticoreParam(4))
 
-  ### Baseline ###
+  ### Week Zero ###
 
   # TxImport
   dir <- paste(getwd(), 'Data', tissue, sep='/')
@@ -48,14 +48,51 @@ loop <- function(tissue) {
   res <- res %>%
     mutate(gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    rename(Gene = gene_name, 
+    rename(EnsemblID = gene_id,
+           GeneSymbol = gene_name, 
            AvgExpr = baseMean,
            logFC = log2FoldChange, 
            p.value = pvalue,
            q.value = padj) %>%
     arrange(p.value) %>%
-    select(Gene, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0.txt'), sep='\t')
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq/Response/', tissue, ',wk0.txt'), sep='\t')
+
+  ### Week One ###
+
+  # DESeq
+  res <- data.frame(results(dds, name='wk1.DeltaPASI', filterfun=ihw))
+  id <- rownames(res)
+  res <- res %>%
+    mutate(gene_id = id) %>%
+    inner_join(e2g, by='gene_id') %>%
+    rename(EnsemblID = gene_id,
+           GeneSymbol = gene_name, 
+           AvgExpr = baseMean,
+           logFC = log2FoldChange, 
+           p.value = pvalue,
+           q.value = padj) %>%
+    arrange(p.value) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq/Response/', tissue, ',wk1.txt'), sep='\t')
+
+  ### Week Twelve ###
+
+  # DESeq
+  res <- data.frame(results(dds, name='wk12.DeltaPASI', filterfun=ihw))
+  id <- rownames(res)
+  res <- res %>%
+    mutate(gene_id = id) %>%
+    inner_join(e2g, by='gene_id') %>%
+    rename(EnsemblID = gene_id,
+           GeneSymbol = gene_name, 
+           AvgExpr = baseMean,
+           logFC = log2FoldChange, 
+           p.value = pvalue,
+           q.value = padj) %>%
+    arrange(p.value) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq/Response/', tissue, ',wk12.txt'), sep='\t')
 
   ### One week change ###
 
@@ -84,16 +121,54 @@ loop <- function(tissue) {
   res <- res %>%
     mutate(gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    rename(Gene = gene_name, 
+    rename(EnsemblID = gene_id,
+           GeneSymbol = gene_name, 
            AvgExpr = baseMean,
            logFC = log2FoldChange, 
            p.value = pvalue,
            q.value = padj) %>%
     arrange(p.value) %>%
-    select(Gene, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0-wk1.txt'), sep='\t')
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq/Response/', tissue, ',wk0-wk1.txt'), sep='\t')
 
-  ### Twelve week change ###
+  ### Eleven Week Change ###
+
+  # TxImport
+  pheno2 <- filter(pheno, time != 'wk0')
+  files <- file.path(dir, pheno2$sample, 'MB.abundance.tsv')
+  txi <- tximport(files, type='kallisto', tx2gene=t2g, reader=fread)
+
+  # Normalise, filter
+  dds <- DESeqDataSetFromTximport(txi, colData=pheno2, design= ~ 1)
+  dds <- estimateSizeFactors(dds)
+  mat <- counts(dds, normalized=TRUE)
+  mat <- mat[rowMeans(mat) > 1, ] 
+
+  # SVA 
+  mod <- model.matrix(~ 0 + time + subject + wk12.DeltaPASI, data=pheno2)
+  mod0 <- model.matrix(~ 0 + time + subject, data=pheno2)
+  svobj <- svaseq(mat, mod, mod0)
+  des <- cbind(mod, svobj$sv)
+
+  # DESeq
+  dds <- estimateDispersions(dds, modelMatrix=des, maxit=1000)
+  dds <- nbinomWaldTest(dds, betaPrior=FALSE, modelMatrix=des, maxit=1000)
+  res <- data.frame(results(dds, name='wk12.DeltaPASI', filterfun=ihw))
+  id <- rownames(res)
+  res <- res %>%
+    mutate(gene_id = id) %>%
+    inner_join(e2g, by='gene_id') %>%
+    rename(EnsemblID = gene_id,
+           GeneSymbol = gene_name, 
+           AvgExpr = baseMean,
+           logFC = log2FoldChange, 
+           p.value = pvalue,
+           q.value = padj) %>%
+    arrange(p.value) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq/Response/', tissue, ',wk1-wk12.txt'), sep='\t')
+
+  ### Twelve Week Change ###
 
   # TxImport
   pheno2 <- filter(pheno, time != 'wk1')
@@ -120,14 +195,15 @@ loop <- function(tissue) {
   res <- res %>%
     mutate(gene_id = id) %>%
     inner_join(e2g, by='gene_id') %>%
-    rename(Gene = gene_name, 
+    rename(EnsemblID = gene_id,
+           GeneSymbol = gene_name, 
            AvgExpr = baseMean,
            logFC = log2FoldChange, 
            p.value = pvalue,
            q.value = padj) %>%
     arrange(p.value) %>%
-    select(Gene, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/DESeq_', tissue, ',wk0-wk12.txt'), sep='\t')
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
+  fwrite(res, paste0(getwd(), '/Results/DESeq/Response/', tissue, ',wk0-wk12.txt'), sep='\t')
 
 }
 
