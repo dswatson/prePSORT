@@ -11,10 +11,13 @@ NonlesionalSkin/
 Adalimumab/
 Response/
 Severity/
-PrePSORT_Clinical,time.csv
+voom/
+DESeq/
+PrePSORT_Clinical.csv
 Adalimumab_LS_clin.csv
 Ensembl.Hs79.Tx.csv
 Ensembl.Hs79.GeneSymbols.csv
+SomaScan.csv
 Homo_sapiens.GRCh38.79.sqlite
 Baseline.Rmd
 WGCNA.R
