@@ -12,9 +12,9 @@ pheno <- fread(paste0(getwd(), '/Data/PrePSORT_Clinical,time.csv')) %>%
   mutate(wk00 = ifelse(Time == 'wk00', 1, 0),
          wk01 = ifelse(Time == 'wk01', 1, 0),
          wk12 = ifelse(Time == 'wk12', 1, 0),
-         wk00.Response = ifelse(Time == 'wk00', Delta_PASI, 0),
-         wk01.Response = ifelse(Time == 'wk01', Delta_PASI, 0),
-         wk12.Response = ifelse(Time == 'wk12', Delta_PASI, 0))
+         wk00.Response = ifelse(Time == 'wk00', DeltaPASI, 0),
+         wk01.Response = ifelse(Time == 'wk01', DeltaPASI, 0),
+         wk12.Response = ifelse(Time == 'wk12', DeltaPASI, 0))
 t2g <- fread(paste0(getwd(), '/Data/Ensembl.Hs79.Tx.csv'))
 e2g <- fread(paste0(getwd(), '/Data/Ensembl.Hs79.GeneSymbols.csv'))
 
@@ -35,7 +35,7 @@ loop <- function(tissue) {
   # SVA
   mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + PASI_A + 
                       wk00.Response + wk01.Response + wk12.Response, data=pheno)
-  mod0 <- model.matrix(~ Sex + Age + BMI + PASI_A, data=pheno)
+  mod0 <- model.matrix(~ 0 + Time + Sex + Age + BMI + PASI_A, data=pheno)
   svobj <- svaseq(cpm(y), mod, mod0)
   des <- cbind(mod, svobj$sv)
   colnames(des)[11:ncol(des)] <- paste0('SV', 1:svobj$n.sv)
@@ -92,7 +92,7 @@ loop <- function(tissue) {
 
   # SVA
   mod <- model.matrix(~ 0 + Subject + wk01 + wk12 + wk01.Response + wk12.Response, data=pheno)
-  mod0 <- model.matrix(~ Subject, data=pheno)
+  mod0 <- model.matrix(~ 0 + Subject, data=pheno)
   svobj <- svaseq(cpm(y), mod, mod0)
   des <- cbind(mod, svobj$sv)                                                           
   colnames(des)[15:ncol(des)] <- paste0('SV', 1:svobj$n.sv) 
