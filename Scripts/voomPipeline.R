@@ -8,7 +8,7 @@ library(qvalue)
 library(dplyr)
 
 # Prep data
-pheno <- fread(paste0(getwd(), '/Data/PrePSORT_Clinical,time.csv')) %>%
+pheno <- fread(paste0(getwd(), '/Data/PrePSORT_Clinical.csv')) %>%
   mutate(wk00 = ifelse(Time == 'wk00', 1, 0),
          wk01 = ifelse(Time == 'wk01', 1, 0),
          wk12 = ifelse(Time == 'wk12', 1, 0),
