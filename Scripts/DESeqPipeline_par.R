@@ -101,7 +101,7 @@ loop <- function(tissue) {
 
   # SVA
   mod <- model.matrix(~ 0 + Subject + wk01 + wk12 + wk01.Response + wk12.Response, data=pheno)
-  mod0 <- model.matrix(~ 0 + Subject, data=pheno)
+  mod0 <- model.matrix(~ 0 + Subject + wk01 + wk12, data=pheno)
   svobj <- svaseq(mat, mod, mod0)
   des <- cbind(mod, svobj$sv)
 
@@ -147,6 +147,7 @@ loop <- function(tissue) {
 
   # SVA
   mod <- model.matrix(~ 0 + Subject + wk00 + wk12 + wk00.Response + wk12.Response, data=pheno)
+  mod0 <- model.matrix(~ 0 + Subject + wk00 + wk12, data=pheno)
   svobj <- svaseq(mat, mod, mod0)
   des <- cbind(mod, svobj$sv)
 
