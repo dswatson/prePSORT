@@ -28,7 +28,8 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   dds <- DESeqDataSetFromTximport(txi, colData=pheno, design= ~ 1)
   dds <- estimateSizeFactors(dds)
   mat <- counts(dds, normalized=TRUE)
-  mat <- mat[rowMeans(mat) > 1, ] 
+  keep <- rowMeans(mat) > 1
+  mat <- mat[keep, ] 
 
   # SVA
   mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + PASI_A + 
@@ -38,11 +39,12 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   des <- cbind(mod, svobj$sv)
 
   # DEseq
-  dds <- estimateDispersions(dds, modelMatrix=des, maxit=10000)
-  dds <- nbinomWaldTest(dds, betaPrior=FALSE, modelMatrix=des, maxit=10000)
+  dds <- dds[keep, ]
+  dds1 <- estimateDispersions(dds, modelMatrix=des, maxit=10000)
+  dds1 <- nbinomWaldTest(dds1, betaPrior=FALSE, modelMatrix=des, maxit=10000)
 
   # Extract
-  res <- data.frame(results(dds, name='wk00.Response', filterfun=ihw))
+  res <- data.frame(results(dds1, name='wk00.Response', filterfun=ihw))
   id <- rownames(res)
   res <- res %>%
     mutate(gene_id = id) %>%
@@ -60,7 +62,7 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   ### Week One ###
 
   # Extract
-  res <- data.frame(results(dds, name='wk01.Response', filterfun=ihw))
+  res <- data.frame(results(dds1, name='wk01.Response', filterfun=ihw))
   id <- rownames(res)
   res <- res %>%
     mutate(gene_id = id) %>%
@@ -78,7 +80,7 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   ### Week Twelve ###
 
   # Extract
-  res <- data.frame(results(dds, name='wk12.Response', filterfun=ihw))
+  res <- data.frame(results(dds1, name='wk12.Response', filterfun=ihw))
   id <- rownames(res)
   res <- res %>%
     mutate(gene_id = id) %>%
@@ -102,11 +104,11 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   des <- cbind(mod, svobj$sv)
 
   # DESeq
-  dds <- estimateDispersions(dds, modelMatrix=des, maxit=10000)
-  dds <- nbinomWaldTest(dds, betaPrior=FALSE, modelMatrix=des, maxit=10000)
+  dds2 <- estimateDispersions(dds, modelMatrix=des, maxit=10000)
+  dds2 <- nbinomWaldTest(dds2, betaPrior=FALSE, modelMatrix=des, maxit=10000)
 
   # Extract
-  res <- data.frame(results(dds, name='wk01.Response', filterfun=ihw))
+  res <- data.frame(results(dds2, name='wk01.Response', filterfun=ihw))
   id <- rownames(res)
   res <- res %>%
     mutate(gene_id = id) %>%
@@ -124,7 +126,7 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   ### Twelve Week Change ###
 
   # Extract
-  res <- data.frame(results(dds, name='wk12.Response', filterfun=ihw))
+  res <- data.frame(results(dds2, name='wk12.Response', filterfun=ihw))
   id <- rownames(res)
   res <- res %>%
     mutate(gene_id = id) %>%
@@ -148,9 +150,11 @@ for (tissue in c('Blood', 'LesionalSkin', 'NonlesionalSkin')) {
   des <- cbind(mod, svobj$sv)
 
   # DESeq
-  dds <- estimateDispersions(dds, modelMatrix=des, maxit=10000)
-  dds <- nbinomWaldTest(dds, betaPrior=FALSE, modelMatrix=des, maxit=10000)
-  res <- data.frame(results(dds, name='wk12.Response', filterfun=ihw))
+  dds3 <- estimateDispersions(dds, modelMatrix=des, maxit=10000)
+  dds3 <- nbinomWaldTest(dds3, betaPrior=FALSE, modelMatrix=des, maxit=10000)
+
+  # Extract
+  res <- data.frame(results(dds3, name='wk12.Response', filterfun=ihw))
   id <- rownames(res)
   res <- res %>%
     mutate(gene_id = id) %>%
