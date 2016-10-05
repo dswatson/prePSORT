@@ -60,7 +60,7 @@ loop <- function(resp) {
            p.value    = P.Value, 
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
+  fwrite(top, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
     'voom.Blood.', resp, ',wk00.txt'), sep = '\t')
 
   ### Week One ###
@@ -76,7 +76,7 @@ loop <- function(resp) {
            p.value    = P.Value, 
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
+  fwrite(top, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
     'voom.Blood.', resp, ',wk01.txt'), sep = '\t')
 
   ### Week Twelve ###
@@ -92,7 +92,7 @@ loop <- function(resp) {
            p.value    = P.Value, 
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
+  fwrite(top, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
     'voom.Blood.', resp, ',wk12.txt'), sep = '\t')
 
   ### One Week Change ###
@@ -116,7 +116,7 @@ loop <- function(resp) {
            p.value    = P.Value, 
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
+  fwrite(top, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
     'voom.Blood.', resp, ',wk00-wk01.txt'), sep = '\t')
 
   ### Eleven Week Change ###
@@ -132,7 +132,7 @@ loop <- function(resp) {
            p.value    = P.Value, 
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
+  fwrite(top, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
     'voom.Blood.', resp, ',wk01-wk12.txt'), sep = '\t')
 
   ### Twelve Week Change ###
@@ -148,7 +148,7 @@ loop <- function(resp) {
            p.value    = P.Value, 
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-  fwrite(res, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
+  fwrite(top, paste0(getwd(), '/Results/ResponseComparisons/voom/Blood/', 
     'voom.Blood.', resp, '.wk00-wk12.txt'), sep = '\t')
 
 }
