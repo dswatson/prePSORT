@@ -196,7 +196,7 @@ library(doParallel)
 registerDoParallel(cores = 12)
 foreach(t = c('Blood', 'LesionalSkin', 'NonlesionalSkin')) %:%
   foreach(r = c('PASI_75', 'DeltaPASI')) %:%
-    foreach(c = c('noCov', 'clinCov', 'clinAndSV')) %do% 
+    foreach(c = c('noCov', 'clinCov', 'clinAndSV')) %dopar% 
       loop(tissue = t, resp = r, cov = c)
 
 
