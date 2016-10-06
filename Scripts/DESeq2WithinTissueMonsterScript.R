@@ -27,7 +27,7 @@ loop <- function(tissue, resp, cov) {
   # SVA
   if (resp == 'PASI_75') {
     if (cov == 'noCov') {
-      mod <- model.matrix(~ 0 + Time + Time:PASI_75)
+      mod <- model.matrix(~ 0 + Time + Time:PASI_75, data = pheno)
     }
     else {
       mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + HLACW6 + 
