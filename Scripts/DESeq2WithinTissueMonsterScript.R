@@ -30,27 +30,27 @@ loop <- function(tissue, resp, cov) {
       mod <- model.matrix(~ 0 + Time + Time:PASI_75, data = pheno)
     }
     else {
-      mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + HLACW6 + 
-                          PASI_wk00 + Time:PASI_75, data = pheno)
+      mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + PASI_wk00 + HLACW6 +  
+                          Time:PASI_75, data = pheno)
     }
   } else if (resp == 'DeltaPASI') {
     if (cov == 'noCov') {
       mod <- model.matrix(~ 0 + Time + Time:DeltaPASI, data = pheno)
       } else {
-        mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + 
-                            PASI_wk00 + Time:DeltaPASI, data = pheno)
+        mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + PASI_wk00 + HLACW6 + 
+                            Time:DeltaPASI, data = pheno)
       }
   }
   if (cov == 'clinAndSV') {
-    mod0 <- model.matrix(~ 0 + Time + Sex + Age + BMI + PASI_wk00, 
+    mod0 <- model.matrix(~ 0 + Time + Sex + Age + BMI + PASI_wk00 + HLACW6, 
                          data = pheno)
     svobj <- svaseq(mat, mod, mod0)
     des <- cbind(mod, svobj$sv)
-    colnames(des)[8:ncol(des)] <- c('wk00.Response', 'wk01.Response', 'wk12.Response',
+    colnames(des)[9:ncol(des)] <- c('wk00.Response', 'wk01.Response', 'wk12.Response',
                                     paste0('SV', 1:svobj$n.sv))
   } else {
     des <- mod
-    colnames(des)[8:ncol(des)] <- c('wk00.Response', 'wk01.Response', 'wk12.Response')
+    colnames(des)[9:ncol(des)] <- c('wk00.Response', 'wk01.Response', 'wk12.Response')
   }
 
   # DEseq
