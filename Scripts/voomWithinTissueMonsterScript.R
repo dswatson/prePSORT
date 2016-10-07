@@ -25,26 +25,25 @@ loop <- function(tissue, resp, cov) {
   y <- calcNormFactors(y)
 
   # SVA
-  if (resp == 'PASI_75') {
-    if (cov == 'noCov') {
+  if (resp == 'Dichotomous') {
+    if (cov == 'None') {
       mod <- model.matrix(~ 0 + Time + Time:PASI_75, data = pheno)
-    }
-    else {
+    } else {
       mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + HLACW6 + PASI_wk00 + 
                           Time:PASI_75, data = pheno)
     }
-  } else if (resp == 'DeltaPASI') {
-    if (cov == 'noCov') {
+  } else if (resp == 'Continuous') {
+    if (cov == 'None') {
       mod <- model.matrix(~ 0 + Time + Time:DeltaPASI, data = pheno)
-      } else {
-        mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + HLACW6 + PASI_wk00 + 
-                            Time:DeltaPASI, data = pheno)
-      }
+    } else {
+      mod <- model.matrix(~ 0 + Time + Sex + Age + BMI + HLACW6 + PASI_wk00 + 
+                          Time:DeltaPASI, data = pheno)
+    }
   }
-  if (cov == 'clinAndSV') {
+  if (cov == 'All') {
     mod0 <- model.matrix(~ 0 + Time + Sex + Age + BMI + HLACW6 + PASI_wk00, 
                          data = pheno)
-    svobj <- svaseq(cpm(y), mod, mod0)
+    svobj <- svaseq(cpm(y), mod, mod0, n.sv = 5)
     des <- cbind(mod, svobj$sv)
     colnames(des)[9:ncol(des)] <- c('wk00.Response', 'wk01.Response', 'wk12.Response',
                                     paste0('SV', 1:svobj$n.sv))
@@ -175,8 +174,8 @@ loop <- function(tissue, resp, cov) {
 library(doParallel)
 registerDoParallel(cores = 12)
 foreach(t = c('Blood', 'LesionalSkin', 'NonlesionalSkin')) %:%
-  foreach(r = c('PASI_75', 'DeltaPASI')) %:%
-    foreach(c = c('noCov', 'clinCov', 'clinAndSV')) %dopar% 
+  foreach(r = c('Continuous', 'Dichotomous')) %:%
+    foreach(c = c('None', 'Some', 'All')) %dopar% 
       loop(tissue = t, resp = r, cov = c)
 
 
