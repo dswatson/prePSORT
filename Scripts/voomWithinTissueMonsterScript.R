@@ -50,7 +50,8 @@ loop <- function(tissue, resp, cov) {
                                     paste0('SV', 1:svobj$n.sv))
   } else {
     des <- mod
-    colnames(des)[9:ncol(des)] <- c('wk00.Response', 'wk01.Response', 'wk12.Response')
+    colnames(des)[(ncol(des) - 2):ncol(des)] <- 
+      c('wk00.Response', 'wk01.Response', 'wk12.Response')
   }
 
   ### Week Zero ###
