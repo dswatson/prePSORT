@@ -72,8 +72,8 @@ loop <- function(tissue, resp, cov) {
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste(getwd(), 'Results/WithinTissue/voom', resp, tissue, cov,
-         paste('voom', resp, tissue, cov, 'wk00.txt', sep = '.'), sep = '/'), 
-         sep = '\t')
+         paste('voom', resp, tissue, cov, 'wk00.txt', sep = '.'), 
+         sep = '/'), sep = '\t')
 
   ### Week One ###
 
@@ -89,8 +89,8 @@ loop <- function(tissue, resp, cov) {
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste(getwd(), 'Results/WithinTissue/voom', resp, tissue, cov,
-         paste('voom', resp, tissue, cov, 'wk01.txt', sep = '.'), sep = '/'),
-         sep = '\t')
+         paste('voom', resp, tissue, cov, 'wk01.txt', sep = '.'), 
+         sep = '/'), sep = '\t')
 
   ### Week Twelve ###
 
@@ -106,8 +106,8 @@ loop <- function(tissue, resp, cov) {
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste(getwd(), 'Results/WithinTissue/voom', resp, tissue, cov,
-         paste('voom', resp, tissue, cov, 'wk12.txt', sep = '.'), sep = '/'),
-         sep = '\t')
+         paste('voom', resp, tissue, cov, 'wk12.txt', sep = '.'), 
+         sep = '/'), sep = '\t')
 
   ### One Week Change ###
 
@@ -131,8 +131,8 @@ loop <- function(tissue, resp, cov) {
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste(getwd(), 'Results/WithinTissue/voom', resp, tissue, cov,
-         paste('voom', resp, tissue, cov, 'wk00-wk01.txt', sep = '.'), sep = '/'),
-         sep = '\t')
+         paste('voom', resp, tissue, cov, 'wk00-wk01.txt', sep = '.'), 
+         sep = '/'), sep = '\t')
 
   ### Eleven Week Change ###
 
@@ -148,8 +148,8 @@ loop <- function(tissue, resp, cov) {
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste(getwd(), 'Results/WithinTissue/voom', resp, tissue, cov,
-         paste('voom', resp, tissue, cov, 'wk01-wk12.txt', sep = '.'), sep = '/'),
-         sep = '\t')
+         paste('voom', resp, tissue, cov, 'wk01-wk12.txt', sep = '.'), 
+         sep = '/'), sep = '\t')
 
   ### Twelve Week Change ###
 
@@ -165,8 +165,8 @@ loop <- function(tissue, resp, cov) {
            AvgExpr    = AveExpr) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
   fwrite(top, paste(getwd(), 'Results/WithinTissue/voom', resp, tissue, cov,
-         paste('voom', resp, tissue, cov, 'wk00-wk12.txt', sep = '.'), sep = '/'),
-         sep = '\t')
+         paste('voom', resp, tissue, cov, 'wk00-wk12.txt', sep = '.'), 
+         sep = '/'), sep = '\t')
 
 }
 
