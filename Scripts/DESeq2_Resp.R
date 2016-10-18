@@ -1,7 +1,6 @@
 # Load libraries
 library(data.table)
 library(tximport)
-library(edgeR)
 library(sva)
 library(DESeq2)
 library(dplyr)
@@ -15,11 +14,12 @@ e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 # TxImport
 files <- file.path('./Data/RawCounts', pheno$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread)
-keep <- rowSums(cpm(txi$counts) > 1) >= 3
 dds <- DESeqDataSetFromTximport(txi, colData = pheno, design = ~ 1)
-dds <- dds[keep, ]
 dds <- estimateSizeFactors(dds)
 mat <- counts(dds, normalized = TRUE)
+keep <- rowSums(mat >= 10) >= 3
+mat <- mat[keep, ]
+dds <- dds[keep, ]
 rld <- assay(rlog(dds))
 id <- rownames(rld)
 means <- rowMeans(rld)
