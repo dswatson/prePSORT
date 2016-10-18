@@ -31,7 +31,7 @@ loop <- function(resp, cov) {
   library(BiocParallel)
   register(MulticoreParam(2))
 
-  # SVA
+  # Design
   if (resp == 'Dichotomous') {
     if (cov == 'None') {
       mod <- model.matrix(~ 0 + Time.Tissue + Time.Tissue:PASI_75, data = pheno)
