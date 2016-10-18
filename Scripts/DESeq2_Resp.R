@@ -1,6 +1,7 @@
 # Load libraries
 library(data.table)
 library(tximport)
+library(edgeR)
 library(sva)
 library(DESeq2)
 library(dplyr)
@@ -14,12 +15,11 @@ e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 # TxImport
 files <- file.path('./Data/RawCounts', pheno$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread)
+keep <- rowSums(cpm(txi$counts) > 1) >= 3
 dds <- DESeqDataSetFromTximport(txi, colData = pheno, design = ~ 1)
+dds <- dds[keep, ]
 dds <- estimateSizeFactors(dds)
 mat <- counts(dds, normalized = TRUE)
-keep <- rowMeans(mat) > 1
-mat <- mat[keep, ] 
-dds <- dds[keep, ]
 rld <- assay(rlog(dds))
 id <- rownames(rld)
 means <- rowMeans(rld)
@@ -84,8 +84,8 @@ loop <- function(resp, cov) {
       arrange(p.value) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
     fwrite(res, paste0('./Results/Response/DESeq2/',
-           paste('DESeq2', tissue, resp, cov, 'wk00.txt', 
-           sep = '.')), sep = '\t')
+                       paste('DESeq2', tissue, resp, cov, 'wk00.txt', 
+                             sep = '.')), sep = '\t')
   
     # wk01
     res <- data.frame(results(dds, filterfun = ihw,
@@ -101,8 +101,8 @@ loop <- function(resp, cov) {
       arrange(p.value) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
     fwrite(res, paste0('./Results/Response/DESeq2/',
-           paste('DESeq2', tissue, resp, cov, 'wk01.txt', 
-           sep = '.')), sep = '\t')
+                       paste('DESeq2', tissue, resp, cov, 'wk01.txt', 
+                             sep = '.')), sep = '\t')
   
     # wk12
     res <- data.frame(results(dds, filterfun = ihw,
@@ -118,8 +118,8 @@ loop <- function(resp, cov) {
       arrange(p.value) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
     fwrite(res, paste0('./Results/Response/DESeq2/',
-           paste('DESeq2', tissue, resp, cov, 'wk12.txt', 
-           sep = '.')), sep = '\t')
+                       paste('DESeq2', tissue, resp, cov, 'wk12.txt',
+                             sep = '.')), sep = '\t')
     
     ### OVER TIME ###
     
@@ -187,5 +187,6 @@ registerDoParallel(6)
 foreach(r = c('Continuous', 'Dichotomous')) %:%
   foreach(c = c('None', 'Some', 'All')) %dopar% 
     loop(resp = r, cov = c)
+
 
 
