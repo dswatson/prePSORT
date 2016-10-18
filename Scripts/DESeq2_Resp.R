@@ -21,6 +21,7 @@ keep <- rowMeans(mat) > 1
 mat <- mat[keep, ] 
 dds <- dds[keep, ]
 rld <- assay(rlog(dds))
+id <- rownames(rld)
 means <- rowMeans(rld)
 
 # Define loop
@@ -71,9 +72,7 @@ loop <- function(resp, cov) {
 
     # wk0
     res <- data.frame(results(dds, filterfun = ihw,
-                      name = paste0('wk00.', tissue, '.Response')))
-    id <- rownames(res)
-    res <- res %>%
+                      name = paste0('wk00.', tissue, '.Response'))) %>%
       mutate(gene_id = id,
              AvgExpr = means) %>%
       inner_join(e2g, by = 'gene_id') %>%
@@ -90,9 +89,7 @@ loop <- function(resp, cov) {
   
     # wk01
     res <- data.frame(results(dds, filterfun = ihw,
-                              name = paste0('wk01.', tissue, '.Response')))
-    id <- rownames(res)
-    res <- res %>%
+                              name = paste0('wk01.', tissue, '.Response'))) %>%
       mutate(gene_id = id,
              AvgExpr = means) %>%
       inner_join(e2g, by = 'gene_id') %>%
@@ -109,9 +106,7 @@ loop <- function(resp, cov) {
   
     # wk12
     res <- data.frame(results(dds, filterfun = ihw,
-                              name = paste0('wk12.', tissue, '.Response')))
-    id <- rownames(res)
-    res <- res %>%
+                              name = paste0('wk12.', tissue, '.Response'))) %>%
       mutate(gene_id = id,
              AvgExpr = means) %>%
       inner_join(e2g, by = 'gene_id') %>%
@@ -131,9 +126,7 @@ loop <- function(resp, cov) {
     # Delta01
     res <- data.frame(results(dds, filterfun = ihw, contrast = 
                               list(paste0('wk01.', tissue, '.Response'), 
-                                   paste0('wk00.', tissue, '.Response'))))
-    id <- rownames(res)
-    res <- res %>%
+                                   paste0('wk00.', tissue, '.Response')))) %>%
       mutate(gene_id = id,
              AvgExpr = means) %>%
       inner_join(e2g, by = 'gene_id') %>%
@@ -151,9 +144,7 @@ loop <- function(resp, cov) {
     # Delta11
     res <- data.frame(results(dds, filterfun = ihw, contrast = 
                               list(paste0('wk12.', tissue, '.Response'), 
-                                   paste0('wk01.', tissue, '.Response'))))
-    id <- rownames(res)
-    res <- res %>%
+                                   paste0('wk01.', tissue, '.Response')))) %>%
       mutate(gene_id = id,
              AvgExpr = means) %>%
       inner_join(e2g, by = 'gene_id') %>%
@@ -171,9 +162,7 @@ loop <- function(resp, cov) {
     # Delta12
     res <- data.frame(results(dds, filterfun = ihw, contrast = 
                               list(paste0('wk12.', tissue, '.Response'), 
-                                   paste0('wk00.', tissue, '.Response'))))
-    id <- rownames(res)
-    res <- res %>%
+                                   paste0('wk00.', tissue, '.Response')))) %>%
       mutate(gene_id = id,
              AvgExpr = means) %>%
       inner_join(e2g, by = 'gene_id') %>%
