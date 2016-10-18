@@ -23,7 +23,7 @@ y <- calcNormFactors(y)
 # Define loop
 loop <- function(resp, cov) {
 
-  # SVA
+  # Design
   if (resp == 'Dichotomous') {
     if (cov == 'None') {
       mod <- model.matrix(~ 0 + Time.Tissue + Time.Tissue:PASI_75, data = pheno)
@@ -74,7 +74,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0(getwd(), '/Results/FullRun/voom/', 
+    fwrite(top, paste0('./Results/FullRun/voom/', 
            paste('voom', tissue, resp, cov, 'wk00.txt', 
            sep = '.')), sep = '\t')
 
@@ -90,7 +90,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0(getwd(), '/Results/FullRun/voom/', 
+    fwrite(top, paste0('./Results/FullRun/voom/', 
            paste('voom', tissue, resp, cov, 'wk01.txt', 
            sep = '.')), sep = '\t')
 
@@ -106,7 +106,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0(getwd(), '/Results/FullRun/voom/', 
+    fwrite(top, paste0('./Results/FullRun/voom/', 
            paste('voom', tissue, resp, cov, 'wk12.txt', 
            sep = '.')), sep = '\t')
 
@@ -141,7 +141,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0(getwd(), '/Results/WithinTissue/voom/', 
+    fwrite(top, paste0('./Results/WithinTissue/voom/', 
            paste('voom', tissue, resp, cov, 'wk00-wk01.txt', 
            sep = '.')), sep = '\t')
 
@@ -157,7 +157,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0(getwd(), '/Results/WithinTissue/voom/', 
+    fwrite(top, paste0('./Results/WithinTissue/voom/', 
            paste('voom', tissue, resp, cov, 'wk01-wk12.txt', 
            sep = '.')), sep = '\t')
 
@@ -173,7 +173,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0(getwd(), '/Results/WithinTissue/voom/', 
+    fwrite(top, paste0('./Results/WithinTissue/voom/', 
            paste('voom', tissue, resp, cov, 'wk00-wk12.txt', 
            sep = '.')), sep = '\t')
 
