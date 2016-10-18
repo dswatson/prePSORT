@@ -12,8 +12,7 @@ t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 
 # TxImport
-dir <- paste0(getwd(), '/Data/RawCounts')
-files <- file.path(dir, pheno$Sample, 'abundance.tsv')
+files <- file.path('./Data/RawCounts', pheno$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread)
 dds <- DESeqDataSetFromTximport(txi, colData = pheno, design = ~ 1)
 dds <- estimateSizeFactors(dds)
