@@ -15,12 +15,11 @@ e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 files <- file.path('./Data/RawCounts', pheno$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread)
 dds <- DESeqDataSetFromTximport(txi, colData = pheno, design = ~ 1)
-dds <- dds[rowSums(counts(dds)) > 1, ]
 dds <- estimateSizeFactors(dds)
 mat <- counts(dds, normalized = TRUE)
-id <- rownames(mat)
-keep <- rowSums(mat > 5) >= 9
-mat <- mat[keep, ]
+dds <- dds[rowSums(mat > 1) >= 9, ]
+mat <- mat[rowSums(mat > 5) >= 9, ]
+id <- rownames(dds)
 
 # Define loop
 loop <- function(resp, cov) {
@@ -32,10 +31,10 @@ loop <- function(resp, cov) {
   # Design
   if (resp == 'Dichotomous') {
     mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
-                          Time.Tissue:PASI_75, data = pheno)
+                        Time.Tissue:PASI_75, data = pheno)
   } else {
     mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
-                          Time.Tissue:DeltaPASI, data = pheno)
+                        Time.Tissue:DeltaPASI, data = pheno)
   }
   if (cov == 'All') {
     mod0 <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00, 
@@ -52,8 +51,8 @@ loop <- function(resp, cov) {
   }
 
   # DEseq
-  dds <- estimateDispersions(dds, modelMatrix = des, maxit = 100000)
-  dds <- nbinomWaldTest(dds, modelMatrix = des, maxit = 100000, betaPrior = FALSE)
+  dds <- estimateDispersions(dds, modelMatrix = des, maxit = 10000)
+  dds <- nbinomWaldTest(dds, modelMatrix = des, maxit = 10000, betaPrior = FALSE)
   
   for (tissue in unique(pheno$Tissue)) {
     
