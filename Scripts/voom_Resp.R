@@ -47,127 +47,64 @@ loop <- function(resp, cov) {
 
   # Voom
   v <- voom(y, des)
-  fit <- eBayes(lmFit(v, des))
   idx <- rownames(v)
+  urFit <- lmFit(v, des)
+  fit <- eBayes(urFit)
 
-  ### AT TIME ###
+  for (tissue in unique(pheno$Tissue))  {
+    
+    ### AT TIME ###
+    
+    for (time in unique(pheno$Time)) {
 
-  for (tissue in unique(pheno$Tissue)) {
+      topTable(fit, number = Inf, sort.by = 'none',
+               coef = paste(time, tissue, 'Response', sep = '.')) %>%
+        mutate(q.value = qvalue(P.Value)$qvalues, 
+               gene_id = idx) %>%
+        inner_join(e2g, by = 'gene_id') %>%
+        rename(EnsemblID  = gene_id,
+               GeneSymbol = gene_name,
+               p.value    = P.Value, 
+               AvgExpr    = AveExpr) %>%
+        arrange(p.value) %>%
+        select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+        fwrite(paste0('./Results/Response/voom/', 
+               paste('voom', tissue, resp, cov, time, 'txt', 
+               sep = '.')), sep = '\t')
+    }
 
-    # wk0
-    topTable(fit, number = Inf, sort.by = 'none',
-             coef = paste0('wk00.', tissue, '.Response')) %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, 
-             gene_id = idx) %>%
-      inner_join(e2g, by = 'gene_id') %>%
-      rename(EnsemblID  = gene_id,
-             GeneSymbol = gene_name,
-             p.value    = P.Value, 
-             AvgExpr    = AveExpr) %>%
-      arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/voom/', 
-             paste('voom', tissue, resp, cov, 'wk00.txt', 
-             sep = '.')), sep = '\t')
+    ### OVER TIME ###
 
-    # wk1
-    topTable(fit, number = Inf, sort.by = 'none',
-             coef = paste0('wk01.', tissue, '.Response')) %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, 
-             gene_id = idx) %>%
-      inner_join(e2g, by = 'gene_id') %>%
-      rename(EnsemblID  = gene_id,
-             GeneSymbol = gene_name,
-             p.value    = P.Value, 
-             AvgExpr    = AveExpr) %>%
-      arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/voom/', 
-             paste('voom', tissue, resp, cov, 'wk01.txt', 
-             sep = '.')), sep = '\t')
-
-    # wk12
-    topTable(fit, number = Inf, sort.by = 'none',
-             coef = paste0('wk12.', tissue, '.Response')) %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, 
-             gene_id = idx) %>%
-      inner_join(e2g, by = 'gene_id') %>%
-      rename(EnsemblID  = gene_id,
-             GeneSymbol = gene_name,
-             p.value    = P.Value, 
-             AvgExpr    = AveExpr) %>%
-      arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/voom/', 
-             paste('voom', tissue, resp, cov, 'wk12.txt', 
-             sep = '.')), sep = '\t')
-
-  }
-
-  ### OVER TIME ###
-
-  fit <- lmFit(v, des)
-  cm <- makeContrasts('Blood.Delta01' = wk01.Blood.Response - wk00.Blood.Response,
-                      'Blood.Delta11' = wk12.Blood.Response - wk01.Blood.Response,
-                      'Blood.Delta12' = wk12.Blood.Response - wk00.Blood.Response, 
-                      'Lesional.Delta01' = wk01.Lesional.Response - wk00.Lesional.Response,
-                      'Lesional.Delta11' = wk12.Lesional.Response - wk01.Lesional.Response,
-                      'Lesional.Delta12' = wk12.Lesional.Response - wk00.Lesional.Response,
-                      'Nonlesional.Delta01' = wk01.Nonlesional.Response - wk00.Nonlesional.Response,
-                      'Nonlesional.Delta11' = wk12.Nonlesional.Response - wk01.Nonlesional.Response,
-                      'Nonlesional.Delta12' = wk12.Nonlesional.Response - wk00.Nonlesional.Response, 
-                      levels = des)
-  fit <- eBayes(contrasts.fit(fit, cm))
-
-  for (tissue in unique(pheno$Tissue)) {
-
-    # Delta01
-    topTable(fit, number = Inf, sort.by = 'none',
-             coef = paste0(tissue, '.Delta01')) %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, 
-             gene_id = idx) %>%
-      inner_join(e2g, by = 'gene_id') %>%
-      rename(EnsemblID  = gene_id,
-             GeneSymbol = gene_name,
-             p.value    = P.Value, 
-             AvgExpr    = AveExpr) %>%
-      arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/voom/', 
-             paste('voom', tissue, resp, cov, 'wk00-wk01.txt', 
-             sep = '.')), sep = '\t')
-
-    # Delta11
-    topTable(fit, number = Inf, sort.by = 'none',
-             coef = paste0(tissue, '.Delta11')) %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, 
-             gene_id = idx) %>%
-      inner_join(e2g, by = 'gene_id') %>%
-      rename(EnsemblID  = gene_id,
-             GeneSymbol = gene_name,
-             p.value    = P.Value, 
-             AvgExpr    = AveExpr) %>%
-      arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/voom/', 
-             paste('voom', tissue, resp, cov, 'wk01-wk12.txt', 
-             sep = '.')), sep = '\t')
-
-    # Delta12
-    topTable(fit, number = Inf, sort.by = 'p',
-             coef = paste0(tissue, '.Delta12')) %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, 
-             gene_id = idx) %>%
-      inner_join(e2g, by = 'gene_id') %>%
-      rename(EnsemblID  = gene_id,
-             GeneSymbol = gene_name,
-             p.value    = P.Value, 
-             AvgExpr    = AveExpr) %>%
-      arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/voom/', 
-             paste('voom', tissue, resp, cov, 'wk00-wk12.txt', 
-             sep = '.')), sep = '\t')
+    cm <- makeContrasts('Blood.Delta01' = wk01.Blood.Response - wk00.Blood.Response,
+                        'Blood.Delta11' = wk12.Blood.Response - wk01.Blood.Response,
+                        'Blood.Delta12' = wk12.Blood.Response - wk00.Blood.Response, 
+                        'Lesional.Delta01' = wk01.Lesional.Response - wk00.Lesional.Response,
+                        'Lesional.Delta11' = wk12.Lesional.Response - wk01.Lesional.Response,
+                        'Lesional.Delta12' = wk12.Lesional.Response - wk00.Lesional.Response,
+                        'Nonlesional.Delta01' = wk01.Nonlesional.Response - wk00.Nonlesional.Response,
+                        'Nonlesional.Delta11' = wk12.Nonlesional.Response - wk01.Nonlesional.Response,
+                        'Nonlesional.Delta12' = wk12.Nonlesional.Response - wk00.Nonlesional.Response, 
+                        levels = des)
+    fit <- eBayes(contrasts.fit(urFit, cm))
+    
+    for (delta in c('Delta01', 'Delta11', 'Delta12')) {
+      
+      topTable(fit, number = Inf, sort.by = 'none',
+               coef = paste(tissue, delta, sep = '.')) %>%
+        mutate(q.value = qvalue(P.Value)$qvalues, 
+               gene_id = idx) %>%
+        inner_join(e2g, by = 'gene_id') %>%
+        rename(EnsemblID  = gene_id,
+               GeneSymbol = gene_name,
+               p.value    = P.Value, 
+               AvgExpr    = AveExpr) %>%
+        arrange(p.value) %>%
+        select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+        fwrite(paste0('./Results/Response/voom/', 
+                      paste('voom', tissue, resp, cov, delta, 'txt', 
+                            sep = '.')), sep = '\t')
+      
+    }
 
   }
   
