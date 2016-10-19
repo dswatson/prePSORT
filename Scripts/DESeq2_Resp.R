@@ -126,8 +126,8 @@ loop <- function(resp, cov) {
       arrange(p.value) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
       fwrite(paste0('./Results/Response/DESeq2/',
-                       paste('DESeq2', tissue, resp, cov, 'wk00-wk01.txt', 
-                             sep = '.')), sep = '\t')
+                    paste('DESeq2', tissue, resp, cov, 'wk00-wk01.txt', 
+                          sep = '.')), sep = '\t')
     
     # Delta11
     data.frame(results(dds, filterfun = ihw, contrast = 
@@ -144,7 +144,7 @@ loop <- function(resp, cov) {
       arrange(p.value) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
       fwrite(paste0('./Results/Response/DESeq2/',
-                    paste('DESeq2.Blood', resp, cov, 'wk01-wk12.txt', 
+                    paste('DESeq2', tissue, resp, cov, 'wk01-wk12.txt', 
                           sep = '.')), sep = '\t')
     
     # Delta12
