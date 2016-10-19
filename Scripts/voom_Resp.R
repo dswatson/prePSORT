@@ -16,7 +16,7 @@ e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 files <- file.path('./Data/RawCounts', pheno$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread, 
                 countsFromAbundance = 'lengthScaledTPM')
-keep <- rowSums(cpm(txi$counts) > 1) >= 3
+keep <- rowSums(cpm(txi$counts) > 1) >= 9
 y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
 
@@ -25,19 +25,11 @@ loop <- function(resp, cov) {
 
   # Design
   if (resp == 'Dichotomous') {
-    if (cov == 'None') {
-      mod <- model.matrix(~ 0 + Time.Tissue + Time.Tissue:PASI_75, data = pheno)
-    } else {
-      mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
-                          Time.Tissue:PASI_75, data = pheno)
-    }
-  } else if (resp == 'Continuous') {
-    if (cov == 'None') {
-      mod <- model.matrix(~ 0 + Time.Tissue + Time.Tissue:DeltaPASI, data = pheno)
-    } else {
-      mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
-                          Time.Tissue:DeltaPASI, data = pheno)
-    }
+    mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
+                        Time.Tissue:PASI_75, data = pheno)
+  } else {
+    mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
+                        Time.Tissue:DeltaPASI, data = pheno)
   }
   if (cov == 'All') {
     mod0 <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00, 
@@ -49,9 +41,8 @@ loop <- function(resp, cov) {
                                      paste0('SV', 1:svobj$n.sv))
   } else {
     des <- mod
-    colnames(des)[(ncol(des) - 8):ncol(des)] <- 
-      c(paste(rep(unique(pheno$Time), each = 3), 
-              unique(pheno$Tissue), 'Response', sep = '.'))
+    colnames(des)[15:ncol(des)] <- c(paste(rep(unique(pheno$Time), each = 3), 
+                                     unique(pheno$Tissue), 'Response', sep = '.'))
   }
 
   # Voom
@@ -74,7 +65,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/FullRun/voom/', 
+    fwrite(top, paste0('./Results/Response/voom/', 
            paste('voom', tissue, resp, cov, 'wk00.txt', 
            sep = '.')), sep = '\t')
 
@@ -90,7 +81,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/FullRun/voom/', 
+    fwrite(top, paste0('./Results/Response/voom/', 
            paste('voom', tissue, resp, cov, 'wk01.txt', 
            sep = '.')), sep = '\t')
 
@@ -106,7 +97,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/FullRun/voom/', 
+    fwrite(top, paste0('./Results/Response/voom/', 
            paste('voom', tissue, resp, cov, 'wk12.txt', 
            sep = '.')), sep = '\t')
 
@@ -141,7 +132,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/WithinTissue/voom/', 
+    fwrite(top, paste0('./Results/Response/voom/', 
            paste('voom', tissue, resp, cov, 'wk00-wk01.txt', 
            sep = '.')), sep = '\t')
 
@@ -157,7 +148,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/WithinTissue/voom/', 
+    fwrite(top, paste0('./Results/Response/voom/', 
            paste('voom', tissue, resp, cov, 'wk01-wk12.txt', 
            sep = '.')), sep = '\t')
 
@@ -173,7 +164,7 @@ loop <- function(resp, cov) {
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/WithinTissue/voom/', 
+    fwrite(top, paste0('./Results/Response/voom/', 
            paste('voom', tissue, resp, cov, 'wk00-wk12.txt', 
            sep = '.')), sep = '\t')
 
@@ -185,7 +176,7 @@ loop <- function(resp, cov) {
 library(doParallel)
 registerDoParallel(12)
 foreach(r = c('Continuous', 'Dichotomous')) %:%
-  foreach(c = c('None', 'Some', 'All')) %dopar% 
+  foreach(c = c('Some', 'All')) %dopar% 
     loop(resp = r, cov = c)
 
 
