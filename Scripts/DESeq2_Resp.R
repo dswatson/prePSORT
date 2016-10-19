@@ -1,8 +1,8 @@
 # Load libraries
 library(data.table)
 library(tximport)
-library(sva)
 library(DESeq2)
+library(sva)
 library(dplyr)
 
 # Prep data
@@ -15,37 +15,27 @@ e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 files <- file.path('./Data/RawCounts', pheno$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread)
 dds <- DESeqDataSetFromTximport(txi, colData = pheno, design = ~ 1)
+dds <- dds[rowSums(counts(dds)) > 1, ]
 dds <- estimateSizeFactors(dds)
 mat <- counts(dds, normalized = TRUE)
-keep <- rowSums(mat >= 10) >= 3
+id <- rownames(mat)
+keep <- rowSums(mat > 5) >= 9
 mat <- mat[keep, ]
-dds <- dds[keep, ]
-rld <- assay(rlog(dds))
-id <- rownames(rld)
-means <- rowMeans(rld)
 
 # Define loop
 loop <- function(resp, cov) {
   
   # Parallelize
   library(BiocParallel)
-  register(MulticoreParam(2))
+  register(MulticoreParam(3))
 
   # Design
   if (resp == 'Dichotomous') {
-    if (cov == 'None') {
-      mod <- model.matrix(~ 0 + Time.Tissue + Time.Tissue:PASI_75, data = pheno)
-    } else {
-      mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
+    mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
                           Time.Tissue:PASI_75, data = pheno)
-    }
-  } else if (resp == 'Continuous') {
-    if (cov == 'None') {
-      mod <- model.matrix(~ 0 + Time.Tissue + Time.Tissue:DeltaPASI, data = pheno)
-    } else {
-      mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
+  } else {
+    mod <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00 +  
                           Time.Tissue:DeltaPASI, data = pheno)
-    }
   }
   if (cov == 'All') {
     mod0 <- model.matrix(~ 0 + Time.Tissue + Sex + Age + BMI + HLACW6 + PASI_wk00, 
@@ -57,14 +47,13 @@ loop <- function(resp, cov) {
                                      paste0('SV', 1:svobj$n.sv))
   } else {
     des <- mod
-    colnames(des)[(ncol(des) - 8):ncol(des)] <- 
-      c(paste(rep(unique(pheno$Time), each = 3), 
-              unique(pheno$Tissue), 'Response', sep = '.'))
+    colnames(des)[15:ncol(des)] <- c(paste(rep(unique(pheno$Time), each = 3), 
+                                           unique(pheno$Tissue), 'Response', sep = '.'))
   }
 
   # DEseq
-  dds <- estimateDispersions(dds, modelMatrix = des, maxit = 10000)
-  dds <- nbinomWaldTest(dds, modelMatrix = des, maxit = 10000, betaPrior = FALSE)
+  dds <- estimateDispersions(dds, modelMatrix = des, maxit = 100000)
+  dds <- nbinomWaldTest(dds, modelMatrix = des, maxit = 100000, betaPrior = FALSE)
   
   for (tissue in unique(pheno$Tissue)) {
     
@@ -74,7 +63,7 @@ loop <- function(resp, cov) {
     res <- data.frame(results(dds, filterfun = ihw,
                       name = paste0('wk00.', tissue, '.Response'))) %>%
       mutate(gene_id = id,
-             AvgExpr = means) %>%
+             AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name, 
@@ -91,7 +80,7 @@ loop <- function(resp, cov) {
     res <- data.frame(results(dds, filterfun = ihw,
                               name = paste0('wk01.', tissue, '.Response'))) %>%
       mutate(gene_id = id,
-             AvgExpr = means) %>%
+             AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name, 
@@ -108,7 +97,7 @@ loop <- function(resp, cov) {
     res <- data.frame(results(dds, filterfun = ihw,
                               name = paste0('wk12.', tissue, '.Response'))) %>%
       mutate(gene_id = id,
-             AvgExpr = means) %>%
+             AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name, 
@@ -128,7 +117,7 @@ loop <- function(resp, cov) {
                               list(paste0('wk01.', tissue, '.Response'), 
                                    paste0('wk00.', tissue, '.Response')))) %>%
       mutate(gene_id = id,
-             AvgExpr = means) %>%
+             AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name, 
@@ -146,7 +135,7 @@ loop <- function(resp, cov) {
                               list(paste0('wk12.', tissue, '.Response'), 
                                    paste0('wk01.', tissue, '.Response')))) %>%
       mutate(gene_id = id,
-             AvgExpr = means) %>%
+             AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name, 
@@ -164,7 +153,7 @@ loop <- function(resp, cov) {
                               list(paste0('wk12.', tissue, '.Response'), 
                                    paste0('wk00.', tissue, '.Response')))) %>%
       mutate(gene_id = id,
-             AvgExpr = means) %>%
+             AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name, 
@@ -183,9 +172,9 @@ loop <- function(resp, cov) {
 
 # Compute in parallel
 library(doParallel)
-registerDoParallel(6)
+registerDoParallel(4)
 foreach(r = c('Continuous', 'Dichotomous')) %:%
-  foreach(c = c('None', 'Some', 'All')) %dopar% 
+  foreach(c = c('Some', 'All')) %dopar% 
     loop(resp = r, cov = c)
 
 
