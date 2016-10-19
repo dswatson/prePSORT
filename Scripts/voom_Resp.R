@@ -48,58 +48,59 @@ loop <- function(resp, cov) {
   # Voom
   v <- voom(y, des)
   fit <- eBayes(lmFit(v, des))
+  idx <- rownames(v)
 
   ### AT TIME ###
 
   for (tissue in unique(pheno$Tissue)) {
 
     # wk0
-    top <- topTable(fit, number = Inf, sort.by = 'p',
-                    coef = paste0('wk00.', tissue, '.Response'))
-    id <- rownames(top)
-    top <- top %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    topTable(fit, number = Inf, sort.by = 'none',
+             coef = paste0('wk00.', tissue, '.Response')) %>%
+      mutate(q.value = qvalue(P.Value)$qvalues, 
+             gene_id = idx) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name,
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/Response/voom/', 
-           paste('voom', tissue, resp, cov, 'wk00.txt', 
-           sep = '.')), sep = '\t')
+      arrange(p.value) %>%
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/voom/', 
+             paste('voom', tissue, resp, cov, 'wk00.txt', 
+             sep = '.')), sep = '\t')
 
     # wk1
-    top <- topTable(fit, number = Inf, sort.by = 'p',
-                    coef = paste0('wk01.', tissue, '.Response'))
-    id <- rownames(top)
-    top <- top %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    topTable(fit, number = Inf, sort.by = 'none',
+             coef = paste0('wk01.', tissue, '.Response')) %>%
+      mutate(q.value = qvalue(P.Value)$qvalues, 
+             gene_id = idx) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name,
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/Response/voom/', 
-           paste('voom', tissue, resp, cov, 'wk01.txt', 
-           sep = '.')), sep = '\t')
+      arrange(p.value) %>%
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/voom/', 
+             paste('voom', tissue, resp, cov, 'wk01.txt', 
+             sep = '.')), sep = '\t')
 
     # wk12
-    top <- topTable(fit, number = Inf, sort.by = 'p',
-                    coef = paste0('wk12.', tissue, '.Response'))
-    id <- rownames(top)
-    top <- top %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    topTable(fit, number = Inf, sort.by = 'none',
+             coef = paste0('wk12.', tissue, '.Response')) %>%
+      mutate(q.value = qvalue(P.Value)$qvalues, 
+             gene_id = idx) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name,
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/Response/voom/', 
-           paste('voom', tissue, resp, cov, 'wk12.txt', 
-           sep = '.')), sep = '\t')
+      arrange(p.value) %>%
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/voom/', 
+             paste('voom', tissue, resp, cov, 'wk12.txt', 
+             sep = '.')), sep = '\t')
 
   }
 
@@ -121,52 +122,52 @@ loop <- function(resp, cov) {
   for (tissue in unique(pheno$Tissue)) {
 
     # Delta01
-    top <- topTable(fit, number = Inf, sort.by = 'p',
-                    coef = paste0(tissue, '.Delta01'))
-    id <- rownames(top)
-    top <- top %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    topTable(fit, number = Inf, sort.by = 'none',
+             coef = paste0(tissue, '.Delta01')) %>%
+      mutate(q.value = qvalue(P.Value)$qvalues, 
+             gene_id = idx) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name,
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/Response/voom/', 
-           paste('voom', tissue, resp, cov, 'wk00-wk01.txt', 
-           sep = '.')), sep = '\t')
+      arrange(p.value) %>%
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/voom/', 
+             paste('voom', tissue, resp, cov, 'wk00-wk01.txt', 
+             sep = '.')), sep = '\t')
 
     # Delta11
-    top <- topTable(fit, number = Inf, sort.by = 'p',
-                    coef = paste0(tissue, '.Delta11'))
-    id <- rownames(top)
-    top <- top %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    topTable(fit, number = Inf, sort.by = 'none',
+             coef = paste0(tissue, '.Delta11')) %>%
+      mutate(q.value = qvalue(P.Value)$qvalues, 
+             gene_id = idx) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name,
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/Response/voom/', 
-           paste('voom', tissue, resp, cov, 'wk01-wk12.txt', 
-           sep = '.')), sep = '\t')
+      arrange(p.value) %>%
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/voom/', 
+             paste('voom', tissue, resp, cov, 'wk01-wk12.txt', 
+             sep = '.')), sep = '\t')
 
     # Delta12
-    top <- topTable(fit, number = Inf, sort.by = 'p',
-                    coef = paste0(tissue, '.Delta12'))
-    id <- rownames(top)
-    top <- top %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, gene_id = id) %>%
+    topTable(fit, number = Inf, sort.by = 'p',
+             coef = paste0(tissue, '.Delta12')) %>%
+      mutate(q.value = qvalue(P.Value)$qvalues, 
+             gene_id = idx) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
              GeneSymbol = gene_name,
              p.value    = P.Value, 
              AvgExpr    = AveExpr) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(top, paste0('./Results/Response/voom/', 
-           paste('voom', tissue, resp, cov, 'wk00-wk12.txt', 
-           sep = '.')), sep = '\t')
+      arrange(p.value) %>%
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/voom/', 
+             paste('voom', tissue, resp, cov, 'wk00-wk12.txt', 
+             sep = '.')), sep = '\t')
 
   }
   

@@ -19,7 +19,7 @@ dds <- estimateSizeFactors(dds)
 mat <- counts(dds, normalized = TRUE)
 dds <- dds[rowSums(mat > 1) >= 9, ]
 mat <- mat[rowSums(mat > 5) >= 9, ]
-id <- rownames(dds)
+idx <- rownames(dds)
 
 # Define loop
 loop <- function(resp, cov) {
@@ -59,9 +59,9 @@ loop <- function(resp, cov) {
     ### AT TIME ###
 
     # wk0
-    res <- data.frame(results(dds, filterfun = ihw,
-                      name = paste0('wk00.', tissue, '.Response'))) %>%
-      mutate(gene_id = id,
+    data.frame(results(dds, filterfun = ihw, name = 
+                       paste0('wk00.', tissue, '.Response'))) %>%
+      mutate(gene_id = idx,
              AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
@@ -70,15 +70,15 @@ loop <- function(resp, cov) {
              p.value    = pvalue,
              q.value    = padj) %>%
       arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(res, paste0('./Results/Response/DESeq2/',
-                       paste('DESeq2', tissue, resp, cov, 'wk00.txt', 
-                             sep = '.')), sep = '\t')
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/DESeq2/',
+                    paste('DESeq2', tissue, resp, cov, 'wk00.txt', 
+                          sep = '.')), sep = '\t')
   
     # wk01
-    res <- data.frame(results(dds, filterfun = ihw,
-                              name = paste0('wk01.', tissue, '.Response'))) %>%
-      mutate(gene_id = id,
+    data.frame(results(dds, filterfun = ihw, name = 
+                       paste0('wk01.', tissue, '.Response'))) %>%
+      mutate(gene_id = idx,
              AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
@@ -87,15 +87,15 @@ loop <- function(resp, cov) {
              p.value    = pvalue,
              q.value    = padj) %>%
       arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(res, paste0('./Results/Response/DESeq2/',
-                       paste('DESeq2', tissue, resp, cov, 'wk01.txt', 
-                             sep = '.')), sep = '\t')
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/DESeq2/',
+                    paste('DESeq2', tissue, resp, cov, 'wk01.txt', 
+                          sep = '.')), sep = '\t')
   
     # wk12
-    res <- data.frame(results(dds, filterfun = ihw,
-                              name = paste0('wk12.', tissue, '.Response'))) %>%
-      mutate(gene_id = id,
+    data.frame(results(dds, filterfun = ihw, name = 
+                       paste0('wk12.', tissue, '.Response'))) %>%
+      mutate(gene_id = idx,
              AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
@@ -104,18 +104,18 @@ loop <- function(resp, cov) {
              p.value    = pvalue,
              q.value    = padj) %>%
       arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(res, paste0('./Results/Response/DESeq2/',
-                       paste('DESeq2', tissue, resp, cov, 'wk12.txt',
-                             sep = '.')), sep = '\t')
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/DESeq2/',
+                    paste('DESeq2', tissue, resp, cov, 'wk12.txt',
+                          sep = '.')), sep = '\t')
     
     ### OVER TIME ###
     
     # Delta01
-    res <- data.frame(results(dds, filterfun = ihw, contrast = 
-                              list(paste0('wk01.', tissue, '.Response'), 
-                                   paste0('wk00.', tissue, '.Response')))) %>%
-      mutate(gene_id = id,
+    data.frame(results(dds, filterfun = ihw, contrast = 
+                       list(paste0('wk01.', tissue, '.Response'), 
+                            paste0('wk00.', tissue, '.Response')))) %>%
+      mutate(gene_id = idx,
              AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
@@ -124,16 +124,16 @@ loop <- function(resp, cov) {
              p.value    = pvalue,
              q.value    = padj) %>%
       arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(res, paste0('./Results/Response/DESeq2/',
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/DESeq2/',
                        paste('DESeq2', tissue, resp, cov, 'wk00-wk01.txt', 
                              sep = '.')), sep = '\t')
     
     # Delta11
-    res <- data.frame(results(dds, filterfun = ihw, contrast = 
-                              list(paste0('wk12.', tissue, '.Response'), 
-                                   paste0('wk01.', tissue, '.Response')))) %>%
-      mutate(gene_id = id,
+    data.frame(results(dds, filterfun = ihw, contrast = 
+                       list(paste0('wk12.', tissue, '.Response'), 
+                            paste0('wk01.', tissue, '.Response')))) %>%
+      mutate(gene_id = idx,
              AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
@@ -142,16 +142,16 @@ loop <- function(resp, cov) {
              p.value    = pvalue,
              q.value    = padj) %>%
       arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(res, paste0('./Results/Response/DESeq2/',
-                       paste('DESeq2.Blood', resp, cov, 'wk01-wk12.txt', 
-                             sep = '.')), sep = '\t')
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/DESeq2/',
+                    paste('DESeq2.Blood', resp, cov, 'wk01-wk12.txt', 
+                          sep = '.')), sep = '\t')
     
     # Delta12
-    res <- data.frame(results(dds, filterfun = ihw, contrast = 
-                              list(paste0('wk12.', tissue, '.Response'), 
-                                   paste0('wk00.', tissue, '.Response')))) %>%
-      mutate(gene_id = id,
+    data.frame(results(dds, filterfun = ihw, contrast = 
+                       list(paste0('wk12.', tissue, '.Response'), 
+                            paste0('wk00.', tissue, '.Response')))) %>%
+      mutate(gene_id = idx,
              AvgExpr = log2(baseMean)) %>%
       inner_join(e2g, by = 'gene_id') %>%
       rename(EnsemblID  = gene_id,
@@ -160,10 +160,10 @@ loop <- function(resp, cov) {
              p.value    = pvalue,
              q.value    = padj) %>%
       arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value)
-    fwrite(res, paste0('./Results/Response/DESeq2/',
-                       paste('DESeq2', tissue, resp, cov, 'wk00-wk12.txt', 
-                             sep = '.')), sep = '\t')
+      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+      fwrite(paste0('./Results/Response/DESeq2/',
+                    paste('DESeq2', tissue, resp, cov, 'wk00-wk12.txt', 
+                          sep = '.')), sep = '\t')
   
   }
 
