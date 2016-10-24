@@ -38,6 +38,7 @@ v <- voom(y, des)
 idx <- rownames(v)
 urFit <- lmFit(v, des)
 
+# Define loop
 loop <- function(tissue, time)  {
   
   ### AT TIME ###
@@ -55,7 +56,7 @@ loop <- function(tissue, time)  {
     arrange(p.value) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
     fwrite(paste0('./Results/Adalimumab/', 
-                  paste(tissue, time, 'txt', sep = '.')), sep = '\t')
+                  paste('voom', tissue, time, 'txt', sep = '.')), sep = '\t')
   
   ### OVER TIME ###
   
@@ -75,7 +76,7 @@ loop <- function(tissue, time)  {
     arrange(p.value) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
     fwrite(paste0('./Results/Adalimumab/', 
-                  paste0(tissue, '.Delta12.txt')), sep = '\t')
+                  paste0('voom.', tissue, '.Delta12.txt')), sep = '\t')
   
 }
 
