@@ -2,6 +2,7 @@
 library(data.table)
 library(tximport)
 library(edgeR)
+library(limma)
 library(sva)
 library(qvalue)
 library(dplyr)
