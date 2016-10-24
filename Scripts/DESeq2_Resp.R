@@ -61,8 +61,8 @@ loop <- function(resp, cov) {
     
     for (time in unique(pheno$Time)) {
       
-      data.frame(results(dds), filterfun = ihw, name = 
-                 paste(time, tissue, 'Response', sep = '.')) %>%
+      data.frame(results(dds, filterfun = ihw, name = 
+                 paste(time, tissue, 'Response', sep = '.'))) %>%
         mutate(gene_id = idx,
                AvgExpr = log2(baseMean)) %>%
         inner_join(e2g, by = 'gene_id') %>%
