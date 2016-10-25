@@ -42,7 +42,7 @@ loop <- function(tissue, time) {
   
   ### AT TIME ###
     
-  data.frame(results(dds, filterfun = ihw, name = 
+  data.frame(results(dds, filterfun = ihw, alpha = 0.05, name = 
                      paste(time, tissue, 'Response', sep = '.'))) %>%
                mutate(gene_id = idx,
                       AvgExpr = log2(baseMean)) %>%
@@ -60,9 +60,9 @@ loop <- function(tissue, time) {
   
   ### OVER TIME ###
     
-  data.frame(results(dds, filterfun = ihw, contrast = 
-                       list(paste('wk12', tissue, 'Response', sep = '.'),
-                            paste('wk00', tissue, 'Response', sep = '.')))) %>%
+  data.frame(results(dds, filterfun = ihw, alpha = 0.05, contrast = 
+                     list(paste('wk12', tissue, 'Response', sep = '.'),
+                          paste('wk00', tissue, 'Response', sep = '.')))) %>%
     mutate(gene_id = idx,
            AvgExpr = log2(baseMean)) %>%
     inner_join(e2g, by = 'gene_id') %>%
