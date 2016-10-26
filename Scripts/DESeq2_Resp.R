@@ -61,8 +61,8 @@ loop <- function(resp, cov) {
     
     for (time in unique(pheno$Time)) {
       
-      data.frame(results(dds, filterfun = ihw, alpha = 0.05, name = 
-                         paste(time, tissue, 'Response', sep = '.'))) %>%
+      as.data.frame(results(dds, filterfun = ihw, alpha = 0.05, name = 
+                            paste(time, tissue, 'Response', sep = '.'))) %>%
         mutate(gene_id = idx,
                AvgExpr = log2(baseMean)) %>%
         inner_join(e2g, by = 'gene_id') %>%
@@ -81,15 +81,15 @@ loop <- function(resp, cov) {
     
     ### OVER TIME ###
     
-    Delta01 <- c('wk01', 'wk00')
-    Delta11 <- c('wk12', 'wk01')
-    Delta12 <- c('wk12', 'wk00')
+    deltas <- data.frame(Delta01 = c('wk01', 'wk00'), 
+                         Delta11 = c('wk12', 'wk01'), 
+                         Delta12 = c('wk12', 'wk00'))
     
-    for (delta in c(Delta01, Delta11, Delta12)) {
+    for (j in 1:ncol(deltas)) {
       
-      data.frame(results(dds, filterfun = ihw, alpha = 0.05, contrast = 
-                         list(paste(delta[1], tissue, 'Response', sep = '.'),
-                              paste(delta[2], tissue, 'Response', sep = '.')))) %>%
+      as.data.frame(results(dds, filterfun = ihw, alpha = 0.05, contrast = 
+                            list(paste(deltas[1, j], tissue, 'Response', sep = '.'),
+                                 paste(deltas[2, j], tissue, 'Response', sep = '.')))) %>%
         mutate(gene_id = idx,
                AvgExpr = log2(baseMean)) %>%
         inner_join(e2g, by = 'gene_id') %>%
