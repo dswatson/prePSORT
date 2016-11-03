@@ -7,8 +7,7 @@ library(qvalue)
 library(dplyr)
 
 # Prep data
-pheno <- fread('./Data/Clinical.csv') %>%
-  mutate(Time.Tissue = paste(Time, Tissue, sep = '.'))
+pheno <- fread('./Data/Clinical.csv')
 t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 
@@ -21,7 +20,7 @@ y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
 
 # Fit model
-des <- model.matrix(~ 0 + Time.Tissue + Time.Tissue:DeltaPASI, data = pheno)
+des <- model.matrix(~ 0 + Time:Tissue + Time:Tissue:DeltaPASI, data = pheno)
 colnames(des)[10:18] <- c(paste(rep(unique(pheno$Time), each = 3), 
                                 unique(pheno$Tissue), 
                                 'Response', sep = '.'))
