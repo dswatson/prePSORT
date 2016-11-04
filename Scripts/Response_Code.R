@@ -47,7 +47,7 @@ for (tissue in unique(pheno$Tissue))  {
              AvgExpr    = AveExpr) %>%
       arrange(p.value) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/MixedModel/', 
+      fwrite(paste0('./Results/Response/', 
                     paste(tissue, time, 'txt', sep = '.')), sep = '\t')
   }
 }
@@ -77,7 +77,7 @@ for (tissue in unique(pheno$Tissue))  {
              AvgExpr    = AveExpr) %>%
       arrange(p.value) %>%
       select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/MixedModel/', 
+      fwrite(paste0('./Results/Response/', 
                     paste(tissue, delta, 'txt', sep = '.')), sep = '\t')
   }
 }
