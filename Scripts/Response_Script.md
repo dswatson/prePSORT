@@ -45,7 +45,7 @@ txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread,
 Preprocessing
 =============
 
-Before conducting EDA or differential expression analysis, we remove genes with less than one count per million (CPM) in at least nine libraries. This ensures that every gene is expressed in at least one of our nine replicates per subject (three tissue types observed at three timepoints each). This threshold follows the filtering guidelines of [Robinson et al. (2010)](https://www.ncbi.nlm.nih.gov/pubmed/19910308). Counts are then TMM normalised prior to modeling [Robinson & Oshlack, 2010](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-3-r25). See the extensive `edgeR` [package vignette](https://www.bioconductor.org/packages/3.3/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for more details.
+Before conducting EDA or differential expression analysis, we remove genes with less than one count per million (CPM) in at least nine libraries. This ensures that every gene is expressed in at least one of our nine replicates per subject (three tissue types observed at three timepoints each). This threshold follows the filtering guidelines of [Robinson et al. (2010)](https://www.ncbi.nlm.nih.gov/pubmed/19910308). Counts are then TMM normalised prior to modeling ([Robinson & Oshlack, 2010](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-3-r25)). See the extensive `edgeR` [package vignette](https://www.bioconductor.org/packages/3.3/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for more details.
 
 ``` r
 # Filter genes
@@ -127,7 +127,7 @@ This plot represents perhaps the clearest possible summary of the findings from 
 Model Fit
 =========
 
-Our study's repeated measures design requires a mixed modeling approach in order to examine between- and within-subject variation using a single model. Toward that end, we proceeded in the following stages.
+Our study's repeated measures design requires a mixed modeling approach in order to examine between- and within-subject variation using a single model. Toward that end, we proceed in the following stages.
 
 Design Matrix
 -------------
@@ -221,7 +221,7 @@ knitr::kable(anova(lm(Weight ~ Subject, data = df),
 |      79|   8.915973|   NA|         NA|        NA|         NA|
 |      88|  10.491503|   -9|  -1.575531|  1.551111|  0.1448956|
 
-It appears from these F-tests that tissue type is the main driver of variation in library quality. This is true even though the design matrix passed to `voomWithQualityWeights` includes a Time:Tissue interaction term, meaning sample variance is only calculated in comparison to other libraries from the same Time:Tissue combination. Because the variability is considerable---the minimum and maximum weights differ by a factor of five---we elect to build a heteroscedastic model that will take sample weights into account.
+It appears from these F-tests that tissue type is the main driver of variation in library quality. This is true even though the design matrix passed to `voomWithQualityWeights` includes a Time:Tissue interaction term, meaning sample variance is only calculated in comparison to other libraries from the same Time:Tissue combination. Because the variability is considerable - the minimum and maximum weights differ by a factor of five - we elect to build a heteroscedastic model that will take sample weights into account.
 
 The default method for estimating sample weights is a fast gene-by-gene update algorithm developed by Ritchie et al. in their original `arrayWeights` paper. The residual maximum likelihood (REML) estimator is a slower, more exact method based on iterative scoring. We use this algorithm moving forward, with the maximum number of iterations set to 1000.
 
@@ -232,7 +232,7 @@ v <- voomWithQualityWeights(y, des, method = 'reml', maxiter = 1000)
 Random Effect
 -------------
 
-As noted above, our study requires that we look for differential expression both between patients (i.e., at various tissue/time combinations) and within patients (i.e., across time points). To account for the intra-subject correlations inherent to this repeated measures design, we use the `duplicateCorrelation` function to approximate a mixed model in which the subject blocking variable becomes a random effect [Smyth, 2005](http://www.statsci.org/smyth/pubs/dupcor.pdf). Following the [advice of the package authors](https://support.bioconductor.org/p/59700/), we estimate `voom` weights and block correlations twice each.
+As noted above, our study requires that we look for differential expression both between patients (i.e., at various tissue/time combinations) and within patients (i.e., across time points). To account for the intra-subject correlations inherent to this repeated measures design, we use the `duplicateCorrelation` function to approximate a mixed model in which the subject blocking variable becomes a random effect ([Smyth, 2005](http://www.statsci.org/smyth/pubs/dupcor.pdf)). Following the [advice of the package authors](https://support.bioconductor.org/p/59700/), we estimate `voom` weights and block correlations twice each.
 
 ``` r
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject)
@@ -267,7 +267,7 @@ idx <- rownames(v)
 Differential Expression Analysis
 ================================
 
-We now export the results of each contrast with the following functions, which modify `limma`'s default `topTable` output by replacing the classic [Benjamini-Hochberg FDR](https://www.jstor.org/stable/2346101) with [Storey's *q*-values](http://people.eecs.berkeley.edu/~jordan/sail/readings/storey-annals-05.pdf), which offer greater power for measuring [genomewide significance](http://www.pnas.org/content/100/16/9440.full). We also rename/reshuffle columns for a clean, consistent output.
+We now export the results of each contrast with the following code, which modifies `limma`'s default `topTable` output by replacing the classic [Benjamini-Hochberg FDR](https://www.jstor.org/stable/2346101) with [Storey's *q*-values](http://people.eecs.berkeley.edu/~jordan/sail/readings/storey-annals-05.pdf), offering greater power for measuring [genomewide significance](http://www.pnas.org/content/100/16/9440.full). We also rename/reshuffle columns for a clean, consistent output. 
 
 ``` r
 # At time
@@ -326,7 +326,8 @@ To get an overview of how many genes are declared differentially expressed at 10
 ``` r
 # Create grid
 df <- expand.grid(Tissue  = unique(pheno$Tissue),
-                  Time    = c(unique(pheno$Time), c('Delta01', 'Delta11', 'Delta12')),
+                  Time    = c(unique(pheno$Time), 
+                              c('Delta01', 'Delta11', 'Delta12')),
                   DEgenes = NA)
 
 # Populate DEgenes column
@@ -365,13 +366,12 @@ knitr::kable(df)
 It appears there are signs of differential expression in some tissue/time combinations, but almost none in the cross time point comparisons. To get a better sense for these results, it helps to visualise them as a bar plot.
 
 ``` r
-df %>%
-  ggplot(aes(Time, DEgenes, fill = Tissue)) + 
-    geom_bar(stat = 'identity', position = 'dodge') + 
-    labs(title = 'Differential Expression by Tissue and Time',
-         y = 'Differentially Expressed Genes (10% FDR)') + 
-    theme_bw() + 
-    theme(legend.justification = c(1, 1), legend.position = c(1, 1))
+ggplot(df, aes(Time, DEgenes, fill = Tissue)) + 
+  geom_bar(stat = 'identity', position = 'dodge') + 
+  labs(title = 'Differential Expression by Tissue and Time',
+       y = 'Differentially Expressed Genes (10% FDR)') + 
+  theme_bw() + 
+  theme(legend.justification = c(1, 1), legend.position = c(1, 1))
 ```
 
 <p align='center'>
@@ -407,13 +407,12 @@ It will be interesting to see if pathway analysis confirms a strong TNF inhibito
 Let's quickly check that *p*-values are well-behaved.
 
 ``` r
-top %>%
-  ggplot(aes(p.value)) + 
-    geom_histogram(bins = 100, colour = 'black', fill = 'white') + 
-    labs(title = 'Differential Expression by Drug Response: \n Blood, Baseline',
-         x = expression(italic(p)*'-value'),
-         y = 'Frequency') + 
-    theme_bw()
+ggplot(top, aes(p.value)) + 
+  geom_histogram(bins = 100, colour = 'black', fill = 'white') + 
+  labs(title = 'Differential Expression by Drug Response: \n Blood, Baseline',
+       x = expression(italic(p)*'-value'),
+       y = 'Frequency') + 
+  theme_bw()
 ```
 
 <p align='center'>
@@ -455,24 +454,3 @@ plot_volcano(top, fdr = 0.1,
 </p>
 
 The most significant hits are clearly exhibiting negative log fold changes, although the spread of up- and down-regulated genes seems about even.
-
-As one final visualisation, we create a heatmap of the top 1000 genes in this contrast.
-
-``` r
-# Create top gene expression matrix
-deg <- mat[top$EnsemblID[1:1000], grepl('Blood.wk00', colnames(mat))]
-
-# Define colour palette
-rb <- colorRampPalette(brewer.pal(10, 'RdBu'))(n = 256)
-
-# Make heatmap
-aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb, 
-         annCol = list(Group = pheno$Group), 
-         main = 'Top 1,000 Differentially Expressed Genes \n Blood, Baseline')
-```
-
-<p align='center'>
-<img src="Response_Script_files/figure-markdown_github/heatmap-1.png" style="display: block; margin: auto;" />
-</p>
-
-It appears that subject 9, a relative outlier by the sample-wise hierarchical clustering dendrogram above, is driving most of the differential expression in this contrast. This is a danger with small sample sizes like we find in the between-patient comparisons of this study. We'll have to explore other contrasts to see if we find similar patterns in other tissue types and time points.
