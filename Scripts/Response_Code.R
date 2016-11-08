@@ -24,9 +24,9 @@ des <- model.matrix(~ 0 + Time:Tissue + Time:Tissue:DeltaPASI, data = pheno)
 colnames(des)[10:18] <- c(paste(rep(unique(pheno$Time), each = 3), 
                                 unique(pheno$Tissue), 
                                 'Response', sep = '.'))
-v <- voomWithQualityWeights(y, des, method = 'reml', maxiter = 1000)
+v <- voomWithQualityWeights(y, des)
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject)
-v <- voomWithQualityWeights(y, des, method = 'reml', maxiter = 1000,
+v <- voomWithQualityWeights(y, des, 
                             correlation = corfit$consensus, block = pheno$Subject)
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject)
 idx <- rownames(v)
