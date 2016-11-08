@@ -21,9 +21,11 @@ y <- calcNormFactors(y)
 
 # Fit model
 des <- model.matrix(~ 0 + Time:Tissue + Time:Tissue:DeltaPASI, data = pheno)
-colnames(des)[10:18] <- c(paste(rep(unique(pheno$Time), each = 3), 
-                                unique(pheno$Tissue), 
-                                'Response', sep = '.'))
+colnames(des) <- c(paste(rep(unique(pheno$Time), times = 3), 
+                         rep(unique(pheno$Tissue), each = 3), sep = '.'),
+                   paste(rep(unique(pheno$Time), times = 3),
+                         rep(unique(pheno$Tissue), each = 3),
+                         'Response', sep = '.'))
 v <- voomWithQualityWeights(y, des)
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject)
 v <- voomWithQualityWeights(y, des, 
