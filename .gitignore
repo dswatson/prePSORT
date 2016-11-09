@@ -5,17 +5,10 @@
 .Rapp.history
 PSORT.Rproj
 Other/
-Blood/
-LesionalSkin/
-NonlesionalSkin/
 RawCounts/
 Adalimumab/
 Response/
-Severity/
-voom/
-DESeq/
-Full/
-Spearman/
+Tissue/
 Clinical.csv
 Clinical_old.csv
 LCPM_mat.csv
@@ -23,7 +16,6 @@ Adalimumab_LS_clin.csv
 Ensembl.Hs79.Tx.csv
 Ensembl.Hs79.GeneSymbols.csv
 SomaScan.csv
-Baseline.Rmd
 WGCNA.R
 Adalimumab_EDA.Rmd
 Proteomics_EDA.Rmd
