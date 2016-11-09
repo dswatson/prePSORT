@@ -73,7 +73,9 @@ We begin by examining the data's mean-variance trend, as the shape of this curve
 plot_mean_var(mat, type = 'RNA-seq')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/meanvar-1.png" style="display: block; margin: auto;" />
+</p>
 
 This plot looks about right for these data.
 
@@ -86,7 +88,9 @@ While a mean-variance plot tells us something about the distribution of counts b
 plot_density(mat, group = pheno$Tissue, type = 'RNA-seq')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/dens-1.png" style="display: block; margin: auto;" />
+</p>
 
 We find here that blood samples take a unique shape, while skin samples are generally more alike. Still, nonlesional tissue appears to have a slightly higher peak than lesional tissue. There are no clear outliers in this figure, but we cannot make a conclusive judgment about this without further exploration.
 
@@ -99,7 +103,9 @@ We build a sample similarity matrix by calculating the pairwise Euclidean distan
 plot_sim_mat(mat, group = pheno$Tissue)
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/sim_mat-1.png" style="display: block; margin: auto;" />
+</p>
 
 The dendrogram has perfectly separated blood from skin samples, although four from the latter group are misclassified between lesional and nonlesional tissue. Interestingly, each of these misclassifications comes from week 12, which suggests that positive response to treatment for these patients may have clouded the genetic distinction between lesional and nonlesional tissue over the course of the study.
 
@@ -112,7 +118,9 @@ One final, popular method for visualising the variance of a high-dimensional dat
 plot_pca(mat, group = pheno$Tissue)
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/pca-1.png" style="display: block; margin: auto;" />
+</p>
 
 This plot represents perhaps the clearest possible summary of the findings from the last few figures. The first principle component, which captures nearly 60% of the variance in these data, perfectly separates blood from skin samples. The second principle component, which accounts for a little over 9% of the data variance, separates lesional from nonlesional tissue, albeit with some overlap at the fringes.
 
@@ -159,7 +167,9 @@ ggplot(df, aes(Sample, Weight, fill = Tissue)) +
   theme(legend.justification = c(1, 1), legend.position = c(1, 1))
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/wts-1.png" style="display: block; margin: auto;" />
+</p>
 
 Library quality does seem to vary across samples, but it's not entirely clear whether that's a function of tissue, time, the interaction between them, or perhaps even subject. To find out, we run a series of F-tests. The first three are repeated measures ANOVAs, the latter a simple one-way ANOVA. (Technically, we should remove subject 11 from the repeated measures ANOVAs since this patient's week 12 nonlesional sample is NA; in practice, it makes no difference here.)
 
@@ -358,7 +368,9 @@ ggplot(df, aes(Time, DEgenes, fill = Tissue)) +
   theme(legend.justification = c(1, 1), legend.position = c(1, 1))
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/resbar-1.png" style="display: block; margin: auto;" />
+</p>
 
 The single most differentially expressed contrast in these data is lesional skin at week 12, which makes good biological sense. Somewhat more surprising is the strong signal in blood at baseline and one week into treatment.
 
@@ -398,7 +410,9 @@ ggplot(top, aes(p.value)) +
   theme_bw()
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/phist-1.png" style="display: block; margin: auto;" />
+</p>
 
 Those look about right. Let's confirm with a qq-plot.
 
@@ -406,7 +420,9 @@ Those look about right. Let's confirm with a qq-plot.
 qq(top$p.value)
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/qq-1.png" style="display: block; margin: auto;" />
+</p>
 
 The observed *p*-values begin to deviate from their expected distribution under the null hypothesis quite early in the plot, suggesting that there may be a considerable number of false negatives in these results. A larger study will likely detect far more differentially expressed genes in blood at baseline. Interestingly, when we only looked at between-subject contrasts using `DESeq2` and surrogate variables ([Leek, 2014](http://nar.oxfordjournals.org/content/early/2014/10/07/nar.gku864)), we found several hundred more genes passing 5% FDR in this contrast. This is consistent with claims by proponents of both packages that they boost power to detect differential expression ([Love et al., 2014](https://www.ncbi.nlm.nih.gov/pubmed/25516281); [Leek & Storey, 2007](http://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.0030161)). Unfortunately, `DESeq2` has no way of including random effects for longitudinal comparisons. SVA could potentially be run on a mixed model design by including the random effect in the complete design matrix, but as drug response is confounded with subject in our study, this would result in a rank deficient model matrix. In short, we cannot avail ourselves of either tool using our current design.
 
@@ -417,7 +433,9 @@ plot_md(top, fdr = 0.1,
         main = 'Differential Expression by Drug Response: \n Blood, Baseline')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/md-1.png" style="display: block; margin: auto;" />
+</p>
 
 This figure looks reasonable, although it appears there may be more down-regulation than up-regulation in this contrast. A volcano plot will help test this assumption.
 
@@ -426,6 +444,8 @@ plot_volcano(top, fdr = 0.1,
              main = 'Differential Expression by Drug Response: \n Blood, Baseline')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/volc-1.png" style="display: block; margin: auto;" />
+</p>
 
 The most significant hits are clearly exhibiting negative log fold changes, although the spread of up- and down-regulated genes seems about even.
