@@ -135,9 +135,11 @@ Design Matrix
 ``` r
 # Build design matrix
 des <- model.matrix(~ 0 + Time:Tissue + Time:Tissue:DeltaPASI, data = pheno)
-colnames(des)[10:18] <- c(paste(rep(unique(pheno$Time), each = 3), 
-                                unique(pheno$Tissue), 
-                                'Response', sep = '.'))
+colnames(des) <- c(paste(rep(unique(pheno$Time), times = 3), 
+                         rep(unique(pheno$Tissue), each = 3), sep = '.'),
+                   paste(rep(unique(pheno$Time), times = 3),
+                         rep(unique(pheno$Tissue), each = 3),
+                         'Response', sep = '.'))
 ```
 
 This design matrix has 18 columns. The first nine represent every tissue-time point combination, effectively providing intercepts for each of the nine sub-models of which this study is composed. The latter nine are three-way interactions between tissue type, time point, and delta PASI, which we use to measure drug response. The coefficients for these variables will represent the slopes of each linear sub-model. We rename these variables for more convenient reference later on.
