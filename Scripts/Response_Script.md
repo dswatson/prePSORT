@@ -72,7 +72,9 @@ ggplot(df, aes(PASI_wk00, DeltaPASI, label = Subject)) +
   theme_bw()
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/clin-1.png" style="display: block; margin: auto;" />
+</p>
 
 We find here that subject 9, the only patient who got worse over the course of treatment, is an outlier. Their delta PASI score singlehandedly creates the impression of a relationship between baseline and outcome statistics.
 
@@ -88,7 +90,7 @@ cor(df$PASI_wk00[df$Subject != 'S09'], df$DeltaPASI[df$Subject != 'S09'])
 
     ## [1] -0.007712975
 
-Early attempts at this analysis found that subject 9 was driving differential expression results due to the patient's high leverage in least squares regression modeling. Rather than remove this patient altogether, we winsorise the distribution, replacing subject 9's delta PASI score with a lower limit defined as two median absolute deviations below the median of all delta PASI scores.
+Early attempts at this analysis found that subject 9 was driving differential expression results due to the patient's high leverage in least squares regression modeling. Rather than remove this patient altogether, we Winsorise the distribution, replacing subject 9's delta PASI score with a lower limit defined as two median absolute deviations below the median of all delta PASI scores.
 
 ``` r
 # Create function
@@ -104,13 +106,13 @@ winsorise <- function(x, multiple = 2) {
 # Check to see which patient outcomes are changed by winsorisation
 df <- pheno %>%
   distinct(Subject, DeltaPASI) %>%
-  mutate(Winsorised = winsorise(DeltaPASI)) %>%
-  data.table()
+  mutate(Winsorised = winsorise(DeltaPASI))
 ```
 
 This confirms that only subject 9 meets our winsorisation threshold. We can now change the data prior to modeling.
 
 ``` r
+df <- data.table(df)
 pheno[Subject == 'S09', DeltaPASI := df[Subject == 'S09', Winsorised]]
 ```
 
@@ -133,7 +135,9 @@ We begin by examining the data's mean-variance trend, as the shape of this curve
 plot_mean_var(mat, type = 'RNA-seq')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/meanvar-1.png" style="display: block; margin: auto;" />
+</p>
 
 This plot looks about right for these data.
 
@@ -146,7 +150,9 @@ While a mean-variance plot tells us something about the distribution of counts b
 plot_density(mat, group = pheno$Tissue, type = 'RNA-seq')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/dens-1.png" style="display: block; margin: auto;" />
+</p>
 
 We find here that blood samples take a unique shape, while skin samples are generally more alike. Still, nonlesional tissue appears to have a slightly higher peak than lesional tissue. There are no clear outliers in this figure, but we cannot make a conclusive judgment about this without further exploration.
 
@@ -159,7 +165,9 @@ We build a sample similarity matrix by calculating the pairwise Euclidean distan
 plot_sim_mat(mat, group = pheno$Tissue)
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/sim_mat-1.png" style="display: block; margin: auto;" />
+</p>
 
 The dendrogram has perfectly separated blood from skin samples, although three from the latter group are misclassified between lesional and nonlesional tissue. Interestingly, each of these misclassifications comes from week 12, which suggests that positive response to treatment for these patients may have clouded the genetic distinction between lesional and nonlesional tissue over the course of the study.
 
@@ -172,7 +180,9 @@ One final, popular method for visualising the variance of a high-dimensional dat
 plot_pca(mat, group = pheno$Tissue)
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/pca-1.png" style="display: block; margin: auto;" />
+</p>
 
 This plot represents perhaps the clearest possible summary of the findings from the last few figures. The first principle component, which captures nearly 60% of the variance in these data, perfectly separates blood from skin samples. The second principle component, which accounts for a little over 9% of the data variance, separates lesional from nonlesional tissue, albeit with some slight overlap at the fringes.
 
@@ -222,7 +232,9 @@ ggplot(df, aes(Sample, Weight, fill = Tissue)) +
   theme(legend.justification = c(1, 1), legend.position = c(1, 1))
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/wts-1.png" style="display: block; margin: auto;" />
+</p>
 
 Library quality does seem to vary across samples, but it's not entirely clear whether that's a function of tissue, time, the interaction between them, or perhaps even subject. To find out, we run a series of *F*-tests. The first three are repeated measures ANOVAs, the latter a simple one-way ANOVA. (Technically, we should remove subject 11 from the repeated measures ANOVAs since this patient's week 12 lesional sample is NA; in practice, it makes no difference here.)
 
@@ -293,6 +305,8 @@ It's worth checking to see how high the intra-block correlation is just to confi
 ``` r
 corfit$consensus
 ```
+
+    ## [1] 0.320959
 
 That value seems plausible, and confirms that we are right to use this approach. The positive correlation of expression values within each subject-tissue violates the assumption of independence upon which fixed effect models are based.
 
@@ -423,7 +437,9 @@ ggplot(df, aes(Time, DEgenes, fill = Tissue)) +
   theme(legend.justification = c(1, 1), legend.position = c(1, 1))
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/resbar-1.png" style="display: block; margin: auto;" />
+</p>
 
 The single most differentially expressed contrast in these data is lesional skin at week 12, which makes good biological sense. No tissue type is especially predictive of response at baseline, although nonlesional skin seems to have the clearest signal of the three.
 
@@ -458,7 +474,9 @@ Let's quickly check that *p*-values are well-behaved.
 qq(top$p.value, pch = 16, cex = 0.3, main = 'QQ Plot: \n Lesional Skin, Baseline')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/qq-1.png" style="display: block; margin: auto;" />
+</p>
 
 The observed *p*-values begin to deviate from their expected distribution under the null hypothesis quite early in this plot, suggesting that there may be a considerable number of false negatives in these results and/or some covariance structure in the data that has not been adequately captured by our model.
 
@@ -469,7 +487,9 @@ plot_md(top, fdr = 0.1,
         main = 'Differential Expression by Drug Response: \n Lesional Skin, Baseline')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/md-1.png" style="display: block; margin: auto;" />
+</p>
 
 This figure looks reasonable, although it appears there may be more up-regulation than down-regulation in this contrast. A volcano plot will help test this assumption.
 
@@ -478,7 +498,9 @@ plot_volcano(top, fdr = 0.1,
              main = 'Differential Expression by Drug Response: \n Lesional Skin, Baseline')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/volc-1.png" style="display: block; margin: auto;" />
+</p>
 
 The plot is a little right-shifted, indicating more up- than down-regulation among genes in this contrast, but the difference is not particularly extreme.
 
@@ -507,6 +529,8 @@ aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb,
          annCol = list(DeltaPASI = pheno$DeltaPASI[grep('Nonlesional.wk00', pheno$Sample)]))
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/heatmap-1.png" style="display: block; margin: auto;" />
+</p>
 
 The sample-wise clustering in this heatmap makes some sense. Patients are seemingly stratified into strong, medium, and non-responders. The gene-wise clustering, however, is a little harder to parse out. Expression values for each gene vary considerably across libraries, with only a few instances of clear blocks emerging from the data. That could be a byproduct of the relatively low dimensionality in this case - just 46 genes observed across 10 samples. We'll continue with bigger matrices in later analyses.
