@@ -7,7 +7,8 @@ library(qvalue)
 library(dplyr)
 
 # Prep data
-pheno <- fread('./Data/Clinical.csv')
+pheno <- fread('./Data/Clinical.csv') %>%
+  mutate(Tissue = relevel(as.factor(Tissue), ref = 'Nonlesional'))
 t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 
@@ -20,14 +21,13 @@ y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
 
 # Fit model
-des <- model.matrix(~ 0 + Subject + Tissue:Time, data = pheno)
-des <- des[, !grepl('Nonlesional:Timewk00', colnames(des))]
+des <- model.matrix(~ 0 + Subject:Time + Tissue:Time, data = pheno)
 v <- voomWithQualityWeights(y, des)
 idx <- rownames(v)
 fit <- eBayes(lmFit(v, des), robust = TRUE)
 
 # Export results
-topTable(fit, coef = 12, number = Inf, sort.by = 'none') %>%
+topTable(fit, coef = 34, number = Inf, sort.by = 'none') %>%
   mutate(q.value = qvalue(P.Value)$qvalues, 
          gene_id = idx) %>%
   inner_join(e2g, by = 'gene_id') %>%
