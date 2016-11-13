@@ -52,7 +52,7 @@ res <- function(contrast) {
 }
 
 ### AT TIME ###
-des <- model.matrix(~ 0 + Time:Tissue + Time:Tissue:DeltaPASI, data = pheno)
+des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = pheno)
 colnames(des)[10:18] <- paste(rep(unique(pheno$Tissue), each = 3),
                               rep(unique(pheno$Time), times = 3),
                               'Response', sep = '.')
