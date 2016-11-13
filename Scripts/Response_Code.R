@@ -34,13 +34,28 @@ dt <- pheno %>%
   data.table()
 pheno[Subject == 'S09', DeltaPASI := dt[Subject == 'S09', Winsorised]]
 
-# Fit model
+# Define results function
+res <- function(contrast) {
+  topTable(fit, number = Inf, sort.by = 'none',
+           coef = contrast) %>%
+    mutate(q.value = qvalue(P.Value)$qvalues, 
+           gene_id = idx) %>%
+    inner_join(e2g, by = 'gene_id') %>%
+    rename(EnsemblID  = gene_id,
+           GeneSymbol = gene_name,
+           p.value    = P.Value, 
+           AvgExpr    = AveExpr) %>%
+    arrange(p.value) %>%
+    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+    fwrite(paste0('./Results/Response/', 
+                  paste0(contrast, '.txt')), sep = '\t')
+}
+
+### AT TIME ###
 des <- model.matrix(~ 0 + Time:Tissue + Time:Tissue:DeltaPASI, data = pheno)
-colnames(des) <- c(paste(rep(unique(pheno$Time), times = 3), 
-                         rep(unique(pheno$Tissue), each = 3), sep = '.'),
-                   paste(rep(unique(pheno$Time), times = 3),
-                         rep(unique(pheno$Tissue), each = 3),
-                         'Response', sep = '.'))
+colnames(des)[10:18] <- paste(rep(unique(pheno$Tissue), each = 3),
+                              rep(unique(pheno$Time), times = 3),
+                              'Response', sep = '.')
 v <- voomWithQualityWeights(y, des)
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject)
 v <- voomWithQualityWeights(y, des, 
@@ -49,99 +64,31 @@ corfit <- duplicateCorrelation(v, des, block = pheno$Subject)
 idx <- rownames(v)
 fit <- lmFit(v, des, correlation = corfit$consensus, block = pheno$Subject)
 fit <- eBayes(fit, robust = TRUE)
-
-### AT TIME ###
-for (tissue in unique(pheno$Tissue))  {
-  for (time in unique(pheno$Time)) {
-    topTable(fit, number = Inf, sort.by = 'none',
-             coef = paste(time, tissue, 'Response', sep = '.')) %>%
-      mutate(q.value = qvalue(P.Value)$qvalues, 
-             gene_id = idx) %>%
-      inner_join(e2g, by = 'gene_id') %>%
-      rename(EnsemblID  = gene_id,
-             GeneSymbol = gene_name,
-             p.value    = P.Value, 
-             AvgExpr    = AveExpr) %>%
-      arrange(p.value) %>%
-      select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-      fwrite(paste0('./Results/Response/', 
-                    paste(tissue, time, 'txt', sep = '.')), sep = '\t')
-  }
-}
+for (i in colnames(des)[10:18]) res(i)
   
 ### OVER TIME ###
+des <- model.matrix(~ 0 + Subject:Tissue + Tissue:Time + Tissue:Time:DeltaPASI, 
+                    data = pheno)
+des <- des[, !grepl('wk00', colnames(des))]
+colnames(des) <- c(paste(paste0('S', 1:10), 
+                         rep(unique(pheno$Tissue), each = 10), sep = '.'),
+                   paste(rep(unique(pheno$Tissue), times = 2),
+                         rep(c('wk01', 'wk12'), each = 3), sep = '.'),
+                   paste(rep(unique(pheno$Tissue), times = 2), 
+                       rep(c('Delta01', 'Delta12'), each = 3), 
+                       'Response', sep = '.'))
+v <- voomWithQualityWeights(y, des)
+urFit <- lmFit(v, des)
+fit <- eBayes(urFit, robust = TRUE)
+for (i in colnames(des)[37:42]) res(i)
+cm <- makeContrasts('Blood.Delta11.Response' = 
+                      Blood.Delta12.Response - Blood.Delta01.Response,
+                    'Lesional.Delta11.Response' = 
+                      Lesional.Delta12.Response - Lesional.Delta01.Response,
+                    'Nonlesional.Delta11.Response' = 
+                      Nonlesional.Delta12.Response - Nonlesional.Delta01.Response,
+                    levels = des)
+fit <- eBayes(contrasts.fit(urFit, cm), robust = TRUE)
+for (i in colnames(cm)) res(i)
 
-# One week change
-y1 <- y[, !grepl('wk12', pheno$Sample)]
-int <- model.matrix(~ 0 + Subject:Tissue:Time, data = pheno)
-int1 <- int[, grepl('wk00', colnames(int))]
-slope <- model.matrix(~ 0 + Tissue:Time:DeltaPASI, data = pheno)
-slope1 <- slope[, grepl('wk01', colnames(slope))]
-des <- cbind(int1, slope1)
-colnames(des)[28:30] <- paste0(unique(pheno$Tissue), '.Delta01.Response')
-v <- voomWithQualityWeights(y1, des)
-fit <- eBayes(lmFit(v, des), robust = TRUE)
-for (tissue in unique(pheno$Tissue)) {
-  topTable(fit, number = Inf, sort.by = 'none',
-           coef = paste0(tissue, '.Delta01.Response')) %>%
-    mutate(q.value = qvalue(P.Value)$qvalues, 
-           gene_id = idx) %>%
-    inner_join(e2g, by = 'gene_id') %>%
-    rename(EnsemblID  = gene_id,
-           GeneSymbol = gene_name,
-           p.value    = P.Value, 
-           AvgExpr    = AveExpr) %>%
-    arrange(p.value) %>%
-    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/', 
-                  paste0(tissue, '.Delta01.txt')), sep = '\t')
-}   
-
-# Eleven week change
-y11 <- y[, !grepl('wk00', pheno$Sample)]
-int11 <- int[, grepl('wk01', colnames(int))]
-slope11 <- slope[, grepl('wk12', colnames(slope))]
-des <- cbind(int11, slope11)
-colnames(des)[28:30] <- paste0(unique(pheno$Tissue), '.Delta11.Response')
-v <- voomWithQualityWeights(y11, des)
-fit <- eBayes(lmFit(v, des), robust = TRUE)
-for (tissue in unique(pheno$Tissue)) {
-  topTable(fit, number = Inf, sort.by = 'none',
-           coef = paste0(tissue, '.Delta11.Response')) %>%
-    mutate(q.value = qvalue(P.Value)$qvalues, 
-           gene_id = idx) %>%
-    inner_join(e2g, by = 'gene_id') %>%
-    rename(EnsemblID  = gene_id,
-           GeneSymbol = gene_name,
-           p.value    = P.Value, 
-           AvgExpr    = AveExpr) %>%
-    arrange(p.value) %>%
-    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/', 
-                  paste0(tissue, '.Delta11.txt')), sep = '\t')
-} 
-
-# Twelve week change
-y12 <- y[, !grepl('wk01', pheno$Sample)]
-int12 <- int[, grepl('wk00', colnames(int))]
-slope12 <- slope[, grepl('wk12', colnames(slope))]
-des <- cbind(int12, slope12)
-colnames(des)[28:30] <- paste0(unique(pheno$Tissue), '.Delta12.Response')
-v <- voomWithQualityWeights(y12, des)
-fit <- eBayes(lmFit(v, des), robust = TRUE)
-for (tissue in unique(pheno$Tissue)) {
-  topTable(fit, number = Inf, sort.by = 'none',
-           coef = paste0(tissue, '.Delta12.Response')) %>%
-    mutate(q.value = qvalue(P.Value)$qvalues, 
-           gene_id = idx) %>%
-    inner_join(e2g, by = 'gene_id') %>%
-    rename(EnsemblID  = gene_id,
-           GeneSymbol = gene_name,
-           p.value    = P.Value, 
-           AvgExpr    = AveExpr) %>%
-    arrange(p.value) %>%
-    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/', 
-                  paste0(tissue, '.Delta12.txt')), sep = '\t')
-} 
 
