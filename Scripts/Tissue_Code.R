@@ -20,17 +20,14 @@ y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
 
 # Fit model
-des <- model.matrix(~ Subject + Tissue:Time, data = pheno)
-des <- des[, c(1:10, 12:13)]
-colnames(des)[11:12] <- c('wk00.Lesional', 'wk00.Nonlesional')
+des <- model.matrix(~ 0 + Subject + Tissue:Time, data = pheno)
+des <- des[, !grepl('Nonlesional:Timewk00', colnames(des))]
 v <- voomWithQualityWeights(y, des)
 idx <- rownames(v)
-fit <- lmFit(v, des)
-cm <- makeContrasts('Tissue' = wk00.Lesional - wk00.Nonlesional, levels = des)
-fit <- eBayes(contrasts.fit(fit, cm))
+fit <- eBayes(lmFit(v, des), robust = TRUE)
 
 # Export results
-topTable(fit, coef = 'Tissue', number = Inf, sort.by = 'none') %>%
+topTable(fit, coef = 12, number = Inf, sort.by = 'none') %>%
   mutate(q.value = qvalue(P.Value)$qvalues, 
          gene_id = idx) %>%
   inner_join(e2g, by = 'gene_id') %>%
