@@ -111,13 +111,15 @@ winsorise <- function(x, multiple = 2) {
 # Check to see which patient outcomes are changed by winsorisation
 df <- pheno %>%
   distinct(Subject, DeltaPASI) %>%
-  mutate(Winsorised = winsorise(DeltaPASI))
+  mutate(Winsorised = winsorise(DeltaPASI)) %>%
+  data.table()
+
+df
 ```
 
 This confirms that only subject 9 meets our winsorisation threshold. We can now change the data prior to modeling.
 
 ```{r change}
-df <- data.table(df)
 pheno[Subject == 'S09', DeltaPASI := df[Subject == 'S09', Winsorised]]
 ```
 
