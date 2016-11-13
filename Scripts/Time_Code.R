@@ -32,7 +32,7 @@ res <- function(contrast) {
            AvgExpr    = AveExpr) %>%
     arrange(p.value) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/', 
+    fwrite(paste0('./Results/Time/', 
                   paste0(contrast, '.txt')), sep = '\t')
 }
 
@@ -44,7 +44,7 @@ colnames(des) <- c(paste(paste0('S', 1:10),
                          rep(c('Delta01', 'Delta12'), each = 3), sep = '.'))
 v <- voomWithQualityWeights(y, des)
 urFit <- lmFit(v, des)
-fit <- eBayes(urFit, robust = TRUE)
+fit <- eBayes(lmFit(v, des), robust = TRUE)
 for (i in colnames(des)[31:36]) res(i)
 cm <- makeContrasts('Blood.Delta11' = Blood.Delta12 - Blood.Delta01,
                     'Lesional.Delta11' = Lesional.Delta12 - Lesional.Delta01,
