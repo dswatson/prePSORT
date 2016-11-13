@@ -95,7 +95,7 @@ cor(df$PASI_wk00, df$DeltaPASI)
 cor(df$PASI_wk00[df$Subject != 'S09'], df$DeltaPASI[df$Subject != 'S09'])
 ```
 
-Early attempts at this analysis found that subject 9 was driving differential expression results due to the patient's high leverage in least squares regression modeling. Rather than remove this patient altogether, we winsorise the distribution, replacing subject 9's delta PASI score with a lower limit defined as two median absolute deviations below the median of all delta PASI scores.
+Early attempts at this analysis found that subject 9 was driving differential expression results due to the patient's high leverage in least squares regression modeling. Rather than remove this patient altogether, we Winsorise the distribution, replacing subject 9's delta PASI score with a lower limit defined as two median absolute deviations below the median of all delta PASI scores.
 
 ```{r wins, results = 'markup'}
 # Create function
@@ -111,13 +111,13 @@ winsorise <- function(x, multiple = 2) {
 # Check to see which patient outcomes are changed by winsorisation
 df <- pheno %>%
   distinct(Subject, DeltaPASI) %>%
-  mutate(Winsorised = winsorise(DeltaPASI)) %>%
-  data.table()
+  mutate(Winsorised = winsorise(DeltaPASI))
 ```
 
 This confirms that only subject 9 meets our winsorisation threshold. We can now change the data prior to modeling.
 
 ```{r change}
+df <- data.table(df)
 pheno[Subject == 'S09', DeltaPASI := df[Subject == 'S09', Winsorised]]
 ```
 
@@ -254,7 +254,7 @@ idx <- rownames(v)
 
 It's worth checking to see how high the intra-block correlation is just to confirm it's a positive real number on (0, 1).
 
-```{r dupcor2}
+```{r dupcor2, results='markup'}
 corfit$consensus
 ```
 
