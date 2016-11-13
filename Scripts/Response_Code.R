@@ -7,7 +7,9 @@ library(qvalue)
 library(dplyr)
 
 # Prep data
-pheno <- fread('./Data/Clinical.csv')
+pheno <- fread('./Data/Clinical.csv') %>%
+  mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.')) %>%
+  data.table()
 t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 
@@ -57,12 +59,12 @@ colnames(des)[10:18] <- paste(rep(unique(pheno$Tissue), each = 3),
                               rep(unique(pheno$Time), times = 3),
                               'Response', sep = '.')
 v <- voomWithQualityWeights(y, des)
-corfit <- duplicateCorrelation(v, des, block = pheno$Subject)
+corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
 v <- voomWithQualityWeights(y, des, 
-                            correlation = corfit$consensus, block = pheno$Subject)
-corfit <- duplicateCorrelation(v, des, block = pheno$Subject)
+                            correlation = corfit$consensus, block = pheno$Subject.Tissue)
+corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
 idx <- rownames(v)
-fit <- lmFit(v, des, correlation = corfit$consensus, block = pheno$Subject)
+fit <- lmFit(v, des, correlation = corfit$consensus, block = pheno$Subject.Tissue)
 fit <- eBayes(fit, robust = TRUE)
 for (i in colnames(des)[10:18]) res(i)
   
