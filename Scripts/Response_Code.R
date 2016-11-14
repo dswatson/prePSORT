@@ -55,7 +55,7 @@ res <- function(contrast) {
 
 ### AT TIME ###
 des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = pheno)
-colnames(des)[10:18] <- c(paste(rep(unique(pheno$Tissue), times = 3),
+colnames(des)[10:18] <- c(paste(unique(pheno$Tissue),
                                 rep(unique(pheno$Time), each = 3),
                                 'Response', sep = '.'))
 v <- voomWithQualityWeights(y, des)

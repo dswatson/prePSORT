@@ -364,26 +364,26 @@ ggplot(df, aes(Time, DEgenes, fill = Tissue)) +
   theme(legend.justification = c(1, 1), legend.position = c(1, 1))
 ```
 
-The single most differentially expressed contrast in these data is lesional skin at week 12, which makes good biological sense. No tissue type is especially predictive of response at baseline, although nonlesional skin seems to have the clearest signal of the three.
+The single most differentially expressed contrast in these data is nonlesional skin at week 1. No tissue type is especially predictive of response at baseline, although blod and nonlesional skin seem to be tied in this regard. The poor performance of nonlesional skin across the board is a somewhat surprising and unwelcome result. 
 
-## Nonlesional Skin, Baseline
+## Nonlesional Skin, Week 1
 
-Let's take a closer look at the baseline results for nonlesional skin. These are the top ten genes associated with biologic response in that contrast.
+Let's take a closer look at week 1 results for nonlesional skin, since this is where signal is apparently the strongest. These are the top ten genes associated with biologic response in that contrast.
 
 ```{r top, results='markup'}
-top <- fread('./Results/Response/Nonlesional.wk00.Response.txt')
+top <- fread('./Results/Response/Nonlesional.wk01.Response.txt')
 head(top, 10)
 ```
 
-It will be interesting to see if pathway analysis confirms a strong TNF inhibitor signal in these data.
+It will be interesting to see if pathway analysis confirms a strong TNF and/or IFN signal in these data.
 
 Let's quickly check that *p*-values are well-behaved.
 
 ```{r qq, fig.width=6, fig.height=6}
-qq(top$p.value, pch = 16, cex = 0.25, main = 'QQ Plot: \n Nonlesional Skin, Baseline')
+qq(top$p.value, pch = 16, cex = 0.25, main = 'QQ Plot: \n Nonlesional Skin, Week 1')
 ```
 
-The observed *p*-values begin to deviate from their expected distribution under the null hypothesis quite early in this plot, suggesting that there may be a considerable number of false negatives in these results and/or some covariance structure in the data that has not been adequately captured by our model. 
+The observed *p*-values begin to deviate from their expected distribution under the null hypothesis very early in this plot, suggesting some covariance structure in the data that has not been adequately captured by our model. 
 
 Next, we visualise the mean-variance trend in these results with an MD plot.
 

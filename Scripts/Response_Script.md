@@ -454,44 +454,44 @@ ggplot(df, aes(Time, DEgenes, fill = Tissue)) +
 <img src="Response_Script_files/figure-markdown_github/resbar-1.png" style="display: block; margin: auto;" />
 </p>
 
-The single most differentially expressed contrast in these data is lesional skin at week 12, which makes good biological sense. No tissue type is especially predictive of response at baseline, although nonlesional skin seems to have the clearest signal of the three.
+The single most differentially expressed contrast in these data is nonlesional skin at week 1. No tissue type is especially predictive of response at baseline, although blod and nonlesional skin seem to be tied in this regard. The poor performance of nonlesional skin across the board is a somewhat surprising and unwelcome result.
 
-Nonlesional Skin, Baseline
---------------------------
+Nonlesional Skin, Week 1
+------------------------
 
-Let's take a closer look at the baseline results for nonlesional skin. These are the top ten genes associated with biologic response in that contrast.
+Let's take a closer look at week 1 results for nonlesional skin, since this is where signal is apparently the strongest. These are the top ten genes associated with biologic response in that contrast.
 
 ``` r
-top <- fread('./Results/Response/Nonlesional.wk00.Response.txt')
+top <- fread('./Results/Response/Nonlesional.wk01.Response.txt')
 head(top, 10)
 ```
 
-| EnsemblID       | GeneSymbol   |     AvgExpr|       logFC|   p.value|    q.value|
-|:----------------|:-------------|-----------:|-----------:|---------:|----------:|
-| ENSG00000206455 | TCF19        |  -1.7684004|  -17.607976|  2.00e-07|  0.0020188|
-| ENSG00000234674 | TCF19        |  -1.7684004|  -17.607976|  2.00e-07|  0.0020188|
-| ENSG00000230230 | TRIM26       |  -1.8997054|   27.382704|  1.00e-06|  0.0066552|
-| ENSG00000226232 | RP11-419C5.2 |   1.8063606|   -3.129186|  1.70e-06|  0.0068403|
-| ENSG00000206501 | PPP1R11      |  -2.0135774|  -17.202879|  1.80e-06|  0.0068403|
-| ENSG00000034971 | MYOC         |  -0.4890336|   -5.509046|  4.40e-06|  0.0142520|
-| ENSG00000196101 | HLA-DRB3     |  -2.2601731|  -19.195594|  8.90e-06|  0.0245835|
-| ENSG00000227171 | RNF39        |  -3.5978248|   22.721071|  1.06e-05|  0.0254985|
-| ENSG00000206457 | CCHCR1       |  -1.0663214|  -13.502340|  1.39e-05|  0.0297938|
-| ENSG00000206459 | PSORS1C2     |  -3.5578722|  -13.554901|  3.40e-05|  0.0655997|
+| EnsemblID       | GeneSymbol |     AvgExpr|       logFC|  p.value|    q.value|
+|:----------------|:-----------|-----------:|-----------:|--------:|----------:|
+| ENSG00000206501 | PPP1R11    |  -2.0135774|  -17.394123|    0e+00|  0.0000589|
+| ENSG00000224859 | ZNRD1      |  -2.8749890|   23.555889|    0e+00|  0.0000589|
+| ENSG00000227171 | RNF39      |  -3.5978248|   23.766403|    0e+00|  0.0000766|
+| ENSG00000230230 | TRIM26     |  -1.8997054|   23.258520|    0e+00|  0.0000904|
+| ENSG00000206455 | TCF19      |  -1.7684004|  -16.478593|    1e-07|  0.0002310|
+| ENSG00000234674 | TCF19      |  -1.7684004|  -16.478593|    1e-07|  0.0002310|
+| ENSG00000140465 | CYP1A1     |  -2.0158000|  -12.348735|    1e-07|  0.0002310|
+| ENSG00000231679 | HLA-DRB3   |  -1.8289025|   29.692425|    1e-07|  0.0002310|
+| ENSG00000150667 | FSIP1      |  -0.3325605|   -9.155531|    4e-07|  0.0007032|
+| ENSG00000233841 | HLA-C      |   1.9860928|   26.738430|    5e-07|  0.0008929|
 
-It will be interesting to see if pathway analysis confirms a strong TNF inhibitor signal in these data.
+It will be interesting to see if pathway analysis confirms a strong TNF and/or IFN signal in these data.
 
 Let's quickly check that *p*-values are well-behaved.
 
 ``` r
-qq(top$p.value, pch = 16, cex = 0.25, main = 'QQ Plot: \n Nonlesional Skin, Baseline')
+qq(top$p.value, pch = 16, cex = 0.25, main = 'QQ Plot: \n Nonlesional Skin, Week 1')
 ```
 
 <p align='center'>
 <img src="Response_Script_files/figure-markdown_github/qq-1.png" style="display: block; margin: auto;" />
 </p>
 
-The observed *p*-values begin to deviate from their expected distribution under the null hypothesis quite early in this plot, suggesting that there may be a considerable number of false negatives in these results and/or some covariance structure in the data that has not been adequately captured by our model.
+The observed *p*-values begin to deviate from their expected distribution under the null hypothesis very early in this plot, suggesting some covariance structure in the data that has not been adequately captured by our model.
 
 Next, we visualise the mean-variance trend in these results with an MD plot.
 
@@ -511,7 +511,9 @@ plot_volcano(top, fdr = 0.1,
              main = 'Differential Expression by Drug Response: \n Lesional Skin, Baseline')
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/volc-1.png" style="display: block; margin: auto;" />
+</p>
 
 The plot is a little right-shifted, indicating more up- than down-regulation among genes in this contrast, but the difference is not particularly extreme.
 
@@ -540,6 +542,8 @@ aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb,
          annCol = list(DeltaPASI = pheno$DeltaPASI[grep('Nonlesional.wk00', pheno$Sample)]))
 ```
 
+<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/heatmap-1.png" style="display: block; margin: auto;" />
+</p>
 
 The sample-wise clustering in this heatmap makes some sense. Patients are seemingly stratified into strong, medium, and non-responders. The gene-wise clustering, however, is a little harder to parse out. Expression values for each gene vary considerably across libraries, with only a few instances of clear blocks emerging from the data. That could be a byproduct of the relatively low dimensionality in this case - just 46 genes observed across 10 samples. We'll continue with bigger matrices in later analyses.
