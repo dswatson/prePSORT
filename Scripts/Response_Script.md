@@ -103,7 +103,7 @@ winsorise <- function(x, multiple = 2) {
   return(y)
 }
 
-# Check to see which patient outcomes are changed by winsorisation
+# Check to see which patient outcomes are changed by Winsorisation
 df <- pheno %>%
   distinct(Subject, DeltaPASI) %>%
   mutate(Winsorised = winsorise(DeltaPASI)) %>%
@@ -355,8 +355,8 @@ fit <- eBayes(fit, robust = TRUE)
 for (i in colnames(des)[10:18]) res(i)
 ```
 
-Difference Across Time Points
------------------------------
+Differences Across Time Points
+------------------------------
 
 The steps for between-subject comparisons are broadly similar, although in this case we include a Subject:Tissue interaction term to serve as a baseline for paired contrasts. Because this explicitly models the intra-block correlations in our data, we no longer need the `duplicateCorrelation` function to approximate a random effect.
 
@@ -486,7 +486,7 @@ It will be interesting to see if pathway analysis confirms a strong TNF inhibito
 Let's quickly check that *p*-values are well-behaved.
 
 ``` r
-qq(top$p.value, pch = 16, cex = 0.3, main = 'QQ Plot: \n Lesional Skin, Baseline')
+qq(top$p.value, pch = 16, cex = 0.25, main = 'QQ Plot: \n Nonlesional Skin, Baseline')
 ```
 
 <p align='center'>
@@ -499,7 +499,7 @@ Next, we visualise the mean-variance trend in these results with an MD plot.
 
 ``` r
 plot_md(top, fdr = 0.1, 
-        main = 'Differential Expression by Drug Response: \n Lesional Skin, Baseline')
+        main = 'Differential Expression by Drug Response: \n Nonlesional Skin, Baseline')
 ```
 
 <p align='center'>
@@ -540,7 +540,7 @@ colnames(deg) <- gsub('.Nonlesional.wk00', '', colnames(deg))
 
 # Plot heatmap
 aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb,
-         main = paste0('Differentially Expressed Genes, 10% FDR \n Lesional Skin, Baseline'),
+         main = paste0('Differentially Expressed Genes, 10% FDR \n Nonlesional Skin, Baseline'),
          annCol = list(DeltaPASI = pheno$DeltaPASI[grep('Nonlesional.wk00', pheno$Sample)]))
 ```
 
