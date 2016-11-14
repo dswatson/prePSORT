@@ -405,7 +405,7 @@ The plot is a little right-shifted, indicating more up- than down-regulation amo
 
 A heatmap provides another visual tool with which to explore these results.
 
-```{r heatmap, fig.height=7, fig.width=4}
+```{r heatmap, fig.height=7, fig.width=5.5}
 # Define colour palette
 rb <- colorRampPalette(brewer.pal(10, 'RdBu'))(n = 256)
 
