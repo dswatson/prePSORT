@@ -214,11 +214,9 @@ Differences Across Subjects
 ``` r
 # Build design matrix
 des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = pheno)
-colnames(des) <- c(paste(rep(unique(pheno$Time), times = 3), 
-                         rep(unique(pheno$Tissue), each = 3), sep = '.'),
-                   paste(rep(unique(pheno$Time), times = 3),
-                         rep(unique(pheno$Tissue), each = 3),
-                         'Response', sep = '.'))
+colnames(des)[10:18] <- c(paste(rep(unique(pheno$Tissue), times = 3),
+                                rep(unique(pheno$Time), each = 3),
+                                'Response', sep = '.'))
 ```
 
 This design matrix has 18 columns. The first 9 represent every tissue-time combination, effectively providing intercepts for each of the 9 sub-models of which this model is composed. The latter 9 are three-way interactions between tissue type, time point, and delta PASI, which we use to measure drug response. The coefficients for these variables will represent the slopes of each linear sub-model. We rename these variables for more convenient reference later on.
@@ -422,15 +420,15 @@ df
 
 | Tissue      | Time    |  DEgenes|
 |:------------|:--------|--------:|
-| Blood       | wk00    |        8|
-| Lesional    | wk00    |       25|
-| Nonlesional | wk00    |       46|
-| Blood       | wk01    |        2|
-| Lesional    | wk01    |       15|
-| Nonlesional | wk01    |        9|
-| Blood       | wk12    |       12|
-| Lesional    | wk12    |      118|
-| Nonlesional | wk12    |        8|
+| Blood       | wk00    |       10|
+| Lesional    | wk00    |        6|
+| Nonlesional | wk00    |       10|
+| Blood       | wk01    |       27|
+| Lesional    | wk01    |       25|
+| Nonlesional | wk01    |      103|
+| Blood       | wk12    |       42|
+| Lesional    | wk12    |       27|
+| Nonlesional | wk12    |       13|
 | Blood       | Delta01 |        9|
 | Lesional    | Delta01 |        1|
 | Nonlesional | Delta01 |       18|
@@ -468,18 +466,18 @@ top <- fread('./Results/Response/Nonlesional.wk00.Response.txt')
 head(top, 10)
 ```
 
-| EnsemblID       | GeneSymbol   |     AvgExpr|      logFC|  p.value|    q.value|
-|:----------------|:-------------|-----------:|----------:|--------:|----------:|
-| ENSG00000123219 | CENPK        |   2.9594993|  -3.295766|  0.0e+00|  0.0000451|
-| ENSG00000261349 | RP3-465N24.5 |  -1.6165846|  11.910650|  0.0e+00|  0.0001232|
-| ENSG00000064655 | EYA2         |  -0.0150056|  13.190668|  1.0e-07|  0.0004760|
-| ENSG00000196090 | PTPRT        |   0.2866142|  17.513648|  2.0e-07|  0.0009352|
-| ENSG00000234218 | MICB         |  -3.9957524|  20.579315|  3.0e-07|  0.0013489|
-| ENSG00000224859 | ZNRD1        |  -2.8749890|  23.564307|  1.0e-06|  0.0032133|
-| ENSG00000079691 | LRRC16A      |   4.7874031|  -1.976279|  1.7e-06|  0.0048054|
-| ENSG00000197728 | RPS26        |   6.6909155|   3.934162|  2.3e-06|  0.0056265|
-| ENSG00000155970 | MICU3        |   3.0533648|  -2.805703|  2.8e-06|  0.0059221|
-| ENSG00000117597 | DIEXF        |   4.8641665|  -1.191426|  3.8e-06|  0.0068090|
+| EnsemblID       | GeneSymbol   |     AvgExpr|       logFC|   p.value|    q.value|
+|:----------------|:-------------|-----------:|-----------:|---------:|----------:|
+| ENSG00000206455 | TCF19        |  -1.7684004|  -17.607976|  2.00e-07|  0.0020188|
+| ENSG00000234674 | TCF19        |  -1.7684004|  -17.607976|  2.00e-07|  0.0020188|
+| ENSG00000230230 | TRIM26       |  -1.8997054|   27.382704|  1.00e-06|  0.0066552|
+| ENSG00000226232 | RP11-419C5.2 |   1.8063606|   -3.129186|  1.70e-06|  0.0068403|
+| ENSG00000206501 | PPP1R11      |  -2.0135774|  -17.202879|  1.80e-06|  0.0068403|
+| ENSG00000034971 | MYOC         |  -0.4890336|   -5.509046|  4.40e-06|  0.0142520|
+| ENSG00000196101 | HLA-DRB3     |  -2.2601731|  -19.195594|  8.90e-06|  0.0245835|
+| ENSG00000227171 | RNF39        |  -3.5978248|   22.721071|  1.06e-05|  0.0254985|
+| ENSG00000206457 | CCHCR1       |  -1.0663214|  -13.502340|  1.39e-05|  0.0297938|
+| ENSG00000206459 | PSORS1C2     |  -3.5578722|  -13.554901|  3.40e-05|  0.0655997|
 
 It will be interesting to see if pathway analysis confirms a strong TNF inhibitor signal in these data.
 
@@ -513,9 +511,7 @@ plot_volcano(top, fdr = 0.1,
              main = 'Differential Expression by Drug Response: \n Lesional Skin, Baseline')
 ```
 
-<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/volc-1.png" style="display: block; margin: auto;" />
-</p>
 
 The plot is a little right-shifted, indicating more up- than down-regulation among genes in this contrast, but the difference is not particularly extreme.
 
@@ -544,8 +540,6 @@ aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb,
          annCol = list(DeltaPASI = pheno$DeltaPASI[grep('Nonlesional.wk00', pheno$Sample)]))
 ```
 
-<p align='center'>
 <img src="Response_Script_files/figure-markdown_github/heatmap-1.png" style="display: block; margin: auto;" />
-</p>
 
 The sample-wise clustering in this heatmap makes some sense. Patients are seemingly stratified into strong, medium, and non-responders. The gene-wise clustering, however, is a little harder to parse out. Expression values for each gene vary considerably across libraries, with only a few instances of clear blocks emerging from the data. That could be a byproduct of the relatively low dimensionality in this case - just 46 genes observed across 10 samples. We'll continue with bigger matrices in later analyses.

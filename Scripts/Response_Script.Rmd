@@ -183,11 +183,9 @@ We use different models to examine between- and within-subject variation across 
 ```{r des}
 # Build design matrix
 des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = pheno)
-colnames(des) <- c(paste(rep(unique(pheno$Time), times = 3), 
-                         rep(unique(pheno$Tissue), each = 3), sep = '.'),
-                   paste(rep(unique(pheno$Time), times = 3),
-                         rep(unique(pheno$Tissue), each = 3),
-                         'Response', sep = '.'))
+colnames(des)[10:18] <- c(paste(rep(unique(pheno$Tissue), times = 3),
+                                rep(unique(pheno$Time), each = 3),
+                                'Response', sep = '.'))
 ```
 
 This design matrix has 18 columns. The first 9 represent every tissue-time combination, effectively providing intercepts for each of the 9 sub-models of which this model is composed. The latter 9 are three-way interactions between tissue type, time point, and delta PASI, which we use to measure drug response. The coefficients for these variables will represent the slopes of each linear sub-model. We rename these variables for more convenient reference later on.
