@@ -55,9 +55,9 @@ res <- function(contrast) {
 
 ### AT TIME ###
 des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = pheno)
-colnames(des)[10:18] <- paste(rep(unique(pheno$Tissue), each = 3),
-                              rep(unique(pheno$Time), times = 3),
-                              'Response', sep = '.')
+colnames(des)[10:18] <- c(paste(rep(unique(pheno$Tissue), times = 3),
+                                rep(unique(pheno$Time), each = 3),
+                                'Response', sep = '.'))
 v <- voomWithQualityWeights(y, des)
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
 v <- voomWithQualityWeights(y, des, 
