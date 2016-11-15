@@ -12,7 +12,6 @@ library(data.table)
 library(tximport)
 library(edgeR)
 library(limma)
-library(qvalue)
 library(dplyr)
 ```
 
