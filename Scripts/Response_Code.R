@@ -46,7 +46,7 @@ res <- function(contrast) {
     rename(EnsemblID  = gene_id,
            GeneSymbol = gene_name,
            p.value    = P.Value,
-           q.value    = adj.P.Value,
+           q.value    = adj.P.Val,
            AvgExpr    = AveExpr) %>%
     arrange(p.value) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
