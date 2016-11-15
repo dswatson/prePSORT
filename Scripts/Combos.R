@@ -26,18 +26,22 @@ combo <- function(tissue) {
     rowwise() %>%
     mutate(p.value_combo = pchisq(-2 * sum(log(c(p.value_delta01, 
                                                  p.value_wk00))),
-                                  df = 4, lower = FALSE))
-  mix01$q.value <- p.adjust(mix01$p.value_combo, method = 'BH')
-  fwrite(mix01, paste0('./Results/Combos/',
-                       tissue, '.Combo_Baseline.Delta01.txt'), sep = '\t')
+                                  df = 4, lower = FALSE)) 
+  mix01 %>%
+    mutate(q.value = p.adjust(p.value_combo, method = 'BH')) %>%
+    arrange(p.value_combo) %>%
+    fwrite(paste0('./Results/Combos/',
+                  tissue, '.Combo_Baseline.Delta01.txt'), sep = '\t')
   mix12 <- inner_join(wk00, delta12, by = 'EnsemblID') %>%
     rowwise() %>%
     mutate(p.value_combo = pchisq(-2 * sum(log(c(p.value_delta12, 
                                                  p.value_wk00))),
                                   df = 4, lower = FALSE))
-  mix12$q.value <- p.adjust(mix12$p.value_combo, method = 'BH')
-  fwrite(mix12, paste0('./Results/Combos/', 
-                       tissue, '.Combo_Baseline.Delta12.txt'), sep = '\t')
+  mix12 %>%
+    mutate(q.value = p.adjust(p.value_combo, method = 'BH')) %>%
+    arrange(p.value_combo) %>%
+    fwrite(paste0('./Results/Combos/', 
+                  tissue, '.Combo_Baseline.Delta12.txt'), sep = '\t')
   
 }
 
@@ -45,9 +49,3 @@ combo <- function(tissue) {
 for (tissue in c('Blood', 'Lesional', 'Nonlesional')) combo(tissue)
 
 
-  
-  
-  
-  
-  
-  
