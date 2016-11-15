@@ -23,12 +23,12 @@ y <- calcNormFactors(y)
 res <- function(contrast) {
   topTable(fit, number = Inf, sort.by = 'none',
            coef = contrast) %>%
-    mutate(q.value = qvalue(P.Value)$qvalues, 
-           gene_id = idx) %>%
+    mutate(gene_id = idx) %>%
     inner_join(e2g, by = 'gene_id') %>%
     rename(EnsemblID  = gene_id,
            GeneSymbol = gene_name,
-           p.value    = P.Value, 
+           p.value    = P.Value,
+           q.value    = adj.P.Value,
            AvgExpr    = AveExpr) %>%
     arrange(p.value) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%

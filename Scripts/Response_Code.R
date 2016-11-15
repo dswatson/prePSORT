@@ -8,8 +8,7 @@ library(dplyr)
 
 # Prep data
 pheno <- fread('./Data/Clinical.csv') %>%
-  mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.')) %>%
-  data.table()
+  mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.'))
 t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 
@@ -30,22 +29,24 @@ winsorise <- function(x, multiple = 2) {
   y <- y + median(x)
   return(y)
 }
-dt <- pheno %>%
+df <- pheno %>%
   distinct(Subject, DeltaPASI) %>%
-  mutate(Winsorised = winsorise(DeltaPASI)) %>%
-  data.table()
-pheno[Subject == 'S09', DeltaPASI := dt[Subject == 'S09', Winsorised]]
+  mutate(Winsorised = winsorise(DeltaPASI)) 
+pheno$DeltaPASI[pheno$Subject == 'S09'] <- df %>%
+  filter(Subject == 'S09') %>%
+  select(Winsorised) %>%
+  as.numeric()
 
 # Define results function
 res <- function(contrast) {
   topTable(fit, number = Inf, sort.by = 'none',
            coef = contrast) %>%
-    mutate(q.value = qvalue(P.Value)$qvalues, 
-           gene_id = idx) %>%
+    mutate(gene_id = idx) %>%
     inner_join(e2g, by = 'gene_id') %>%
     rename(EnsemblID  = gene_id,
            GeneSymbol = gene_name,
-           p.value    = P.Value, 
+           p.value    = P.Value,
+           q.value    = adj.P.Value,
            AvgExpr    = AveExpr) %>%
     arrange(p.value) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%

@@ -53,8 +53,7 @@ Following RNA-seqencing of all samples, reads were pseudo-aligned using kallisto
 ```{r load}
 # Load data
 pheno <- fread('./Data/Clinical.csv') %>%
-  mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.')) %>%
-  data.table()
+  mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.'))
 t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 files <- file.path('./Data/RawCounts', pheno$Sample, 'abundance.tsv')
@@ -66,12 +65,17 @@ txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread,
 
 Before conducting EDA or differential expression analysis, we remove genes with less than one count per million (CPM) in at least nine libraries. This ensures that every gene is expressed in at least one of our nine replicates per subject (three tissue types observed at three timepoints each). This threshold follows the filtering guidelines of [Robinson et al. (2010)](https://www.ncbi.nlm.nih.gov/pubmed/19910308). Counts are then TMM normalised prior to modeling ([Robinson & Oshlack, 2010](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-3-r25)). See the extensive `edgeR` [package vignette](https://www.bioconductor.org/packages/3.3/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for more details.
 
-```{r filt}
+```{r filt, results = 'markup'}
 # Filter genes
 keep <- rowSums(cpm(txi$counts) > 1) >= 9
 y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
+
+# Check dimensnionality
+dim(y)
 ```  
+
+The analysis will proceed with 19,304 genes.
 
 To get a quick sense for the clinical data, we create a scatterplot of baseline PASI vs. delta PASI. 
 
@@ -109,18 +113,18 @@ winsorise <- function(x, multiple = 2) {
 }
 
 # Check to see which patient outcomes are changed by Winsorisation
-df <- pheno %>%
+(df <- pheno %>%
   distinct(Subject, DeltaPASI) %>%
-  mutate(Winsorised = winsorise(DeltaPASI)) %>%
-  data.table()
-
-df
+  mutate(Winsorised = winsorise(DeltaPASI)))
 ```
 
 This confirms that only subject 9 meets our winsorisation threshold. We can now change the data prior to modeling.
 
 ```{r change}
-pheno[Subject == 'S09', DeltaPASI := df[Subject == 'S09', Winsorised]]
+pheno$DeltaPASI[pheno$Subject == 'S09'] <- df %>%
+  filter(Subject == 'S09') %>%
+  select(Winsorised) %>%
+  as.numeric()
 ```
 
 # Exploratory Data Analysis
@@ -183,7 +187,7 @@ We use different models to examine between- and within-subject variation across 
 ```{r des}
 # Build design matrix
 des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = pheno)
-colnames(des)[10:18] <- c(paste(rep(unique(pheno$Tissue), times = 3),
+colnames(des)[10:18] <- c(paste(unique(pheno$Tissue),
                                 rep(unique(pheno$Time), each = 3),
                                 'Response', sep = '.'))
 ```
@@ -262,18 +266,18 @@ That value seems plausible, and confirms that we are right to use this approach.
 
 ### Genewise Regressions
 
-With all these pieces in place, all that's left to do is fit the genewise regressions. We write a custom function to export results, which modifies `limma`'s default `topTable` output by replacing the classic [Benjamini-Hochberg FDR](https://www.jstor.org/stable/2346101) with [Storey's *q*-values](http://people.eecs.berkeley.edu/~jordan/sail/readings/storey-annals-05.pdf), offering greater power for measuring [genomewide significance](http://www.pnas.org/content/100/16/9440.full). We also rename and reshuffle columns for a clean, consistent output. 
+With all these pieces in place, all that's left to do is fit the genewise regressions. We write a custom function to export results. 
 
 ```{r exp}
 res <- function(contrast) {
   topTable(fit, number = Inf, sort.by = 'none',
            coef = contrast) %>%
-    mutate(q.value = qvalue(P.Value)$qvalues, 
-           gene_id = idx) %>%
+    mutate(gene_id = idx) %>%
     inner_join(e2g, by = 'gene_id') %>%
     rename(EnsemblID  = gene_id,
            GeneSymbol = gene_name,
-           p.value    = P.Value, 
+           p.value    = P.Value,
+           q.value    = adj.P.Value,
            AvgExpr    = AveExpr) %>%
     arrange(p.value) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
