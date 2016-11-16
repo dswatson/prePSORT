@@ -50,7 +50,8 @@ res <- function(contrast) {
            q.value    = adj.P.Val,
            AvgExpr    = AveExpr) %>%
     arrange(p.value) %>%
-    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+    mutate(Idx = row_number()) %>%
+    select(Idx, EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
     fwrite(paste0('./Results/Response/RNAseq/', 
                   paste0(contrast, '.txt')), sep = '\t')
 }
