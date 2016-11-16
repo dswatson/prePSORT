@@ -6,6 +6,7 @@ Differential Expression by Biologic Response
 -   [Exploratory Data Analysis](#exploratory-data-analysis)
 -   [Models](#models)
 -   [Differential Expression Analysis](#differential-expression-analysis)
+-   [Figures](#figures)
 
 All analysis was conducted in R version 3.3.2 using the following script. Computations were performed on a MacBook Pro with 16GB of RAM.
 
@@ -21,8 +22,8 @@ library(data.table)
 library(tximport)
 library(edgeR)
 library(limma)
-library(qvalue)
 library(qqman)
+library(corrplot)
 library(RColorBrewer)
 library(NMF)
 library(tidyverse)
@@ -31,7 +32,7 @@ library(tidyverse)
 Import Data
 ===========
 
-Following RNA-seqencing of all samples, reads were pseudo-aligned using kallisto ([Bray et al., 2016](http://www.nature.com/nbt/journal/v34/n5/full/nbt.3519.html)). Our reference genome was [GRCh38.p2](http://mar2015.archive.ensembl.org/Homo_sapiens/Info/Index), Ensembl version 79. Transcript-level reads were aggregated to gene-level using the `tximport` package ([Soneson et al., 2015](https://f1000research.com/articles/4-1521/v2)). We add a Subject-Tissue interaction term to the clinical data file for later use.
+Following RNA-seqencing of all samples, reads were pseudo-aligned using kallisto ([Bray et al., 2016](http://www.nature.com/nbt/journal/v34/n5/full/nbt.3519.html)). Our reference genome was [GRCh38.p2](http://mar2015.archive.ensembl.org/Homo_sapiens/Info/Index), Ensembl version 79. Transcript-level reads were aggregated to gene-level using the `tximport` package ([Soneson et al., 2015](https://f1000research.com/articles/4-1521/v2)). We add a subject-tissue interaction term to the clinical data file for later use.
 
 ``` r
 # Load data
@@ -47,6 +48,11 @@ txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread,
 Preprocessing
 =============
 
+We modify genetic and clinical data prior to modelling.
+
+Filter, Normalise Counts
+------------------------
+
 Before conducting EDA or differential expression analysis, we remove genes with less than one count per million (CPM) in at least nine libraries. This ensures that every gene is expressed in at least one of our nine replicates per subject (three tissue types observed at three timepoints each). This threshold follows the filtering guidelines of [Robinson et al. (2010)](https://www.ncbi.nlm.nih.gov/pubmed/19910308). Counts are then TMM normalised prior to modeling ([Robinson & Oshlack, 2010](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-3-r25)). See the extensive `edgeR` [package vignette](https://www.bioconductor.org/packages/3.3/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for more details.
 
 ``` r
@@ -54,8 +60,9 @@ Before conducting EDA or differential expression analysis, we remove genes with 
 keep <- rowSums(cpm(txi$counts) > 1) >= 9
 y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
+idx <- rownames(y)
 
-# Check dimensnionality
+# Check dimensionality
 dim(y)
 ```
 
@@ -63,24 +70,67 @@ dim(y)
 
 The analysis will proceed with 19,304 genes.
 
-To get a quick sense for the clinical data, we create a scatterplot of baseline PASI vs. delta PASI.
+Robustify Response Metrics
+--------------------------
+
+To get a quick sense for the clinical data, we create scatterplots of baseline vs. 12 week PASI and baseline vs. delta PASI.
 
 ``` r
 # Create per-subject data frame
-df <- pheno %>% distinct(Subject, PASI_wk00, DeltaPASI)
+df <- pheno %>% distinct(Subject, PASI_wk00, PASI_wk12, DeltaPASI)
+
+# Regress 12 week PASI on baseline
+m <- lm(PASI_wk12 ~ 0 + PASI_wk00, data = df)
+
+# Plot results
+ggplot(df, aes(PASI_wk00, PASI_wk12, label = Subject)) + 
+  geom_text() + 
+  geom_abline(intercept = 0, slope = 1) + 
+  geom_abline(intercept = 0, slope = coef(m), colour = 'blue') + 
+  xlim(0, 40) + ylim(0, 40) + 
+  labs(title = 'Baseline vs. 12 Week PASI',
+       x = 'Baseline PASI',
+       y = '12 Week PASI') + 
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = .5))
+```
+
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/wk0vs12-1.pdf" style="display: block; margin: auto;" />
+</p>
+
+The black line has an intercept of 0 and a slope of 1, representing zero improvement over the course of treatment. We find that only one subject, S09, falls to the left of this line. The blue line has an intercept of 0 and a slope corresponding to the line of best fit through the data points. To obtain a least squares estimate of the average percent change in PASI observed in our study, we calculate the difference in slope between the black and blue lines.
+
+``` r
+as.numeric(1 - coef(m))
+```
+
+    ## [1] 0.6917699
+
+Subjects in our study experienced a 69% reduction in PASI scores over the course of treatment, on average. It's evident from this plot, however, that there is considerable variance around that mean. S09 in particular appears to be an outlier. Note that this patient is the only one in the study who got worse between baseline and week 12. It is important that our model capture genomic signatures of non-response, but the distance between this patient's outcome and the nearest fellow non-responder is disconcertingly large. As we see in the following plot, S09 singlehandedly creates the impression of a relationship between baseline and outcome statistics.
+
+``` r
+# Regress delta PASI on baseline, with and without S09
+m1 <- lm(DeltaPASI ~ PASI_wk00, data = df)
+m2 <- lm(DeltaPASI ~ PASI_wk00, data = filter(df, Subject != 'S09'))
 
 # Plot baseline vs. delta PASI
 ggplot(df, aes(PASI_wk00, DeltaPASI, label = Subject)) + 
   geom_text() + 
+  geom_abline(intercept = coef(m1)[1], slope = coef(m1)[2]) + 
+  geom_abline(intercept = coef(m2)[1], slope = coef(m2)[2], colour = 'blue') + 
   labs(title = 'Baseline vs. Delta PASI',
        x = 'Baseline PASI',
        y = 'Delta PASI') +
-  theme_bw()
+  theme_bw() + 
+  theme(plot.title = element_text(hjust = .5))
 ```
 
-<img src="Response_Script_files/figure-markdown_github/clin-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/wk0vsdelta-1.pdf" style="display: block; margin: auto;" />
+</p>
 
-We find here that subject 9, the only patient who got worse over the course of treatment, is an outlier. Their delta PASI score singlehandedly creates the impression of a relationship between baseline and outcome statistics.
+The black line represents the regression of delta PASI on baseline for all subjects in the study; the blue line represents the same model, excluding S09. Note how the latter line is practically flat, while the former has a clear positive slope. Correlations between these variables are heavily affected by the presence or absence of this single data point.
 
 ``` r
 cor(df$PASI_wk00, df$DeltaPASI)
@@ -94,7 +144,7 @@ cor(df$PASI_wk00[df$Subject != 'S09'], df$DeltaPASI[df$Subject != 'S09'])
 
     ## [1] -0.007712975
 
-Early attempts at this analysis found that subject 9 was driving differential expression results due to the patient's high leverage in least squares regression modeling. Rather than remove this patient altogether, we Winsorise the distribution, replacing subject 9's delta PASI score with a lower limit defined as two median absolute deviations below the median of all delta PASI scores.
+Early attempts at this analysis found that subject 9 was driving differential expression results due to the patient's high leverage in least squares regression modeling. Rather than remove the patient altogether, we elect to Winsorise the distribution, replacing S09's delta PASI score with a lower limit defined as two median absolute deviations below the median of all delta PASI scores.
 
 ``` r
 # Create function
@@ -126,9 +176,10 @@ winsorise <- function(x, multiple = 2) {
 | S10     |   0.8459120|   0.8459120|
 | S11     |   0.7222222|   0.7222222|
 
-This confirms that only subject 9 meets our winsorisation threshold. We can now change the data prior to modeling.
+This confirms that only subject 9 meets our Winsorisation threshold. The patient's results are still by far the most extreme in the data, but have now been robustified for linear modelling.
 
 ``` r
+# Winsorise S09's delta PASI score
 pheno$DeltaPASI[pheno$Subject == 'S09'] <- df %>%
   filter(Subject == 'S09') %>%
   select(Winsorised) %>%
@@ -154,7 +205,9 @@ We begin by examining the data's mean-variance trend, as the shape of this curve
 plot_mean_var(mat, type = 'RNA-seq')
 ```
 
-<img src="Response_Script_files/figure-markdown_github/meanvar-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/meanvar-1.pdf" style="display: block; margin: auto;" />
+</p>
 
 This plot looks about right for these data.
 
@@ -167,7 +220,9 @@ While a mean-variance plot tells us something about the distribution of counts b
 plot_density(mat, group = pheno$Tissue, type = 'RNA-seq')
 ```
 
-<img src="Response_Script_files/figure-markdown_github/dens-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/dens-1.pdf" style="display: block; margin: auto;" />
+</p>
 
 We find here that blood samples take a unique shape, while skin samples are generally more alike. Still, nonlesional tissue appears to have a slightly higher peak than lesional tissue. There are no clear outliers in this figure, but we cannot make a conclusive judgment about this without further exploration.
 
@@ -180,7 +235,9 @@ We build a sample similarity matrix by calculating the pairwise Euclidean distan
 plot_sim_mat(mat, group = pheno$Tissue)
 ```
 
-<img src="Response_Script_files/figure-markdown_github/sim_mat-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/sim_mat-1.pdf" style="display: block; margin: auto;" />
+</p>
 
 The dendrogram has perfectly separated blood from skin samples, although three from the latter group are misclassified between lesional and nonlesional tissue. Interestingly, each of these misclassifications comes from week 12, which suggests that positive response to treatment for these patients may have clouded the genetic distinction between lesional and nonlesional tissue over the course of the study.
 
@@ -193,7 +250,9 @@ One final, popular method for visualising the variance of a high-dimensional dat
 plot_pca(mat, group = pheno$Tissue)
 ```
 
-<img src="Response_Script_files/figure-markdown_github/pca-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/pca-1.pdf" style="display: block; margin: auto;" />
+</p>
 
 This plot represents perhaps the clearest possible summary of the findings from the last few figures. The first principle component, which captures nearly 60% of the variance in these data, perfectly separates blood from skin samples. The second principle component, which accounts for a little over 9% of the data variance, separates lesional from nonlesional tissue, albeit with some slight overlap at the fringes.
 
@@ -237,11 +296,14 @@ ggplot(df, aes(Sample, Weight, fill = Tissue)) +
   geom_hline(yintercept = 1, linetype = 'dashed') + 
   labs(title = 'Library Quality by Tissue') + 
   theme_bw() + 
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
-  theme(legend.justification = c(1, 1), legend.position = c(1, 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        plot.title = element_text(hjust = .5),
+        legend.justification = c(0, 1), legend.position = c(0, 1))
 ```
 
-<img src="Response_Script_files/figure-markdown_github/wts-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/wts-1.pdf" style="display: block; margin: auto;" />
+</p>
 
 Library quality does seem to vary across samples, but it's not entirely clear whether that's a function of tissue, time, the interaction between them, or perhaps even subject. To find out, we run a series of *F*-tests. The first three are repeated measures ANOVAs, the latter a simple one-way ANOVA. (Technically, we should remove subject 11 from the repeated measures ANOVAs since this patient's week 12 lesional sample is NA; in practice, it makes no difference here.)
 
@@ -297,14 +359,13 @@ It appears from these *F*-tests that tissue type is the main driver of variation
 
 ### Random Effect
 
-To account for the intra-subject correlations inherent to our study's repeated measures design, we use the `duplicateCorrelation` function. This approximates a mixed model in which a blocking variable, in this case the interaction between subject and tissue type, becomes a random effect ([Smyth, 2005](http://www.statsci.org/smyth/pubs/dupcor.pdf)). Following the [advice of the package authors](https://support.bioconductor.org/p/59700/), we estimate `voom` weights and block correlations twice each. We also store the model's vector of Ensembl IDs for later reference.
+To account for the intra-subject correlations inherent to our study's repeated measures design, we use the `duplicateCorrelation` function. This approximates a mixed model in which a blocking variable, in this case the interaction between subject and tissue type, becomes a random effect ([Smyth, 2005](http://www.statsci.org/smyth/pubs/dupcor.pdf)). Following the [advice of the package authors](https://support.bioconductor.org/p/59700/), we estimate `voom` weights and block correlations twice each.
 
 ``` r
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
 v <- voomWithQualityWeights(y, des, 
                             correlation = corfit$consensus, block = pheno$Subject.Tissue)
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
-idx <- rownames(v)
 ```
 
 It's worth checking to see how high the intra-block correlation is just to confirm it's a positive real number on (0, 1).
@@ -333,8 +394,9 @@ res <- function(contrast) {
            q.value    = adj.P.Val,
            AvgExpr    = AveExpr) %>%
     arrange(p.value) %>%
-    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/', 
+    mutate(Idx = row_number()) %>%
+    select(Idx, EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+    fwrite(paste0('./Results/Response/RNAseq/', 
                   paste0(contrast, '.txt')), sep = '\t')
 }
 ```
@@ -402,7 +464,7 @@ df <- expand.grid(Tissue  = c('Blood', 'Lesional', 'Nonlesional'),
 
 # Populate DEgenes column
 for (i in 1:nrow(df)) {
-  df$DEgenes[i] <- fread(paste0('./Results/Response/',
+  df$DEgenes[i] <- fread(paste0('./Results/Response/RNAseq/',
                          paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.'))) %>%
                      summarise(sum(q.value < 0.1)) %>%
                      as.numeric()
@@ -441,65 +503,121 @@ ggplot(df, aes(Time, DEgenes, fill = Tissue)) +
   labs(title = 'Differential Expression by Tissue and Time',
        y = 'Differentially Expressed Genes (10% FDR)') + 
   theme_bw() + 
-  theme(legend.justification = c(1, 1), legend.position = c(1, 1))
+  theme(plot.title = element_text(hjust = .5),
+        legend.justification = c(1, 1), legend.position = c(1, 1))
 ```
 
-<img src="Response_Script_files/figure-markdown_github/resbar-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/resbar-1.pdf" style="display: block; margin: auto;" />
+</p>
 
-The single most differentially expressed contrast in these data is nonlesional skin at week 1. No tissue type is especially predictive of response at baseline, although blod and nonlesional skin seem to be tied in this regard. The poor performance of nonlesional skin across the board is a somewhat surprising and unwelcome result.
+The single most differentially expressed contrast in these data is nonlesional skin at week 1. No tissue type is especially predictive of response at baseline, although blood and nonlesional skin seem to be tied in this regard, which is a surprisingly strong showing from blood. The poor performance of nonlesional skin across the board is a somewhat surprising result.
 
-Nonlesional Skin, Week 1
-------------------------
+Figures
+=======
+
+We visualise results using a variety of plots to get a sense for overall and particular findings.
+
+QQ Plots
+--------
+
+To make sure *p*-values are well behaved, we examine QQ plots of results at each tissue-time.
+
+``` r
+par(mfrow = c(3, 3))
+for (i in 1:9) {
+  top <- fread(paste0('./Results/Response/RNAseq/',
+               paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.')))
+  qq(top$p.value, cex = 0.25, main = paste('QQ Plot: \n', df[i, 1], df[i, 2]))
+}
+```
+
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/qq-1.pdf" style="display: block; margin: auto;" />
+</p>
+
+With the exception of nonlesional skin at week 1, these plots suggest a reasonable distribution of *p*-values across the various tissue-times examined in our study. In fact, taken together with our relatively low number of genes declared differentially expressed at 10% FDR, these QQ plots indicate that there are probably a large number of false negatives among our results. The early deviation of observed from expected *p*-values in nonlesional skin at week 1 is probably due to the small sample size. A larger study would likely identify far more genes associated with response and iron out the early wobbles in these QQ plots.
+
+Spearman Correlations
+---------------------
+
+We visualise a Spearman correlation matrix of gene rankings across contrasts to determine the significance of variation across our results.
+
+``` r
+# Create correlation matrix
+cmat <- matrix(nrow = 18, ncol = 18, 
+              dimnames = list(paste(df[, 1], df[, 2], sep = '.'),
+                              paste(df[, 1], df[, 2], sep = '.')))
+for (i in 1:18) {
+  for (j in 1:18) {
+    cmat[i, j] <- fread(paste0('./Results/Response/RNAseq/',
+                       paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.'))) %>%
+      inner_join(fread(paste0('./Results/Response/RNAseq/',
+                       paste(df[j, 1], df[j, 2], 'Response.txt', sep = '.'))),
+                 by = 'EnsemblID') %>%
+      summarise(cor(Idx.x, Idx.y)) %>%
+      as.numeric()
+  }
+}
+
+# Plot results
+corrplot(cmat, type = 'lower', tl.cex = 0.75, tl.srt = 45, pch.cex = 0.5,
+         order = 'hclust', hclust.method = 'average', mar = c(0, 0, 1, 0), 
+         title = 'Spearman Correlation Matrix')
+```
+
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/spearman-1.pdf" style="display: block; margin: auto;" />
+</p>
+
+We find here that gene lists, which are ordered by average linkage hierarchical clustering based on their pairwise Pearson distances, are associated with all and only the other gene lists of the same tissue type. Correlations across tissue types are minimal, although we do detect some correlation between gene rankings from lesional and nonlesional skin samples.
+
+Blood, baseline
+---------------
 
 Let's take a closer look at week 1 results for nonlesional skin, since this is where signal is apparently the strongest. These are the top ten genes associated with biologic response in that contrast.
 
 ``` r
-top <- fread('./Results/Response/Nonlesional.wk01.Response.txt')
+top <- fread('./Results/Response/RNAseq/Nonlesional.wk01.Response.txt')
 head(top, 10)
 ```
 
-| EnsemblID       | GeneSymbol |     AvgExpr|       logFC|  p.value|    q.value|
-|:----------------|:-----------|-----------:|-----------:|--------:|----------:|
-| ENSG00000206501 | PPP1R11    |  -2.0135774|  -17.394123|    0e+00|  0.0000662|
-| ENSG00000224859 | ZNRD1      |  -2.8749890|   23.555889|    0e+00|  0.0000662|
-| ENSG00000227171 | RNF39      |  -3.5978248|   23.766403|    0e+00|  0.0000862|
-| ENSG00000230230 | TRIM26     |  -1.8997054|   23.258520|    0e+00|  0.0001016|
-| ENSG00000206455 | TCF19      |  -1.7684004|  -16.478593|    1e-07|  0.0002597|
-| ENSG00000234674 | TCF19      |  -1.7684004|  -16.478593|    1e-07|  0.0002597|
-| ENSG00000140465 | CYP1A1     |  -2.0158000|  -12.348735|    1e-07|  0.0002597|
-| ENSG00000231679 | HLA-DRB3   |  -1.8289025|   29.692425|    1e-07|  0.0002597|
-| ENSG00000150667 | FSIP1      |  -0.3325605|   -9.155531|    4e-07|  0.0007905|
-| ENSG00000233841 | HLA-C      |   1.9860928|   26.738430|    5e-07|  0.0010038|
+|  Idx| EnsemblID       | GeneSymbol |     AvgExpr|       logFC|  p.value|    q.value|
+|----:|:----------------|:-----------|-----------:|-----------:|--------:|----------:|
+|    1| ENSG00000206501 | PPP1R11    |  -2.0135774|  -17.394123|    0e+00|  0.0000662|
+|    2| ENSG00000224859 | ZNRD1      |  -2.8749890|   23.555889|    0e+00|  0.0000662|
+|    3| ENSG00000227171 | RNF39      |  -3.5978248|   23.766403|    0e+00|  0.0000862|
+|    4| ENSG00000230230 | TRIM26     |  -1.8997054|   23.258520|    0e+00|  0.0001016|
+|    5| ENSG00000206455 | TCF19      |  -1.7684004|  -16.478593|    1e-07|  0.0002597|
+|    6| ENSG00000234674 | TCF19      |  -1.7684004|  -16.478593|    1e-07|  0.0002597|
+|    7| ENSG00000140465 | CYP1A1     |  -2.0158000|  -12.348735|    1e-07|  0.0002597|
+|    8| ENSG00000231679 | HLA-DRB3   |  -1.8289025|   29.692425|    1e-07|  0.0002597|
+|    9| ENSG00000150667 | FSIP1      |  -0.3325605|   -9.155531|    4e-07|  0.0007905|
+|   10| ENSG00000233841 | HLA-C      |   1.9860928|   26.738430|    5e-07|  0.0010038|
 
 It will be interesting to see if pathway analysis confirms a strong TNF and/or IFN signal in these data.
-
-Let's quickly check that *p*-values are well-behaved.
-
-``` r
-qq(top$p.value, pch = 16, cex = 0.25, main = 'QQ Plot: \n Nonlesional Skin, Week 1')
-```
-
-<img src="Response_Script_files/figure-markdown_github/qq-1.png" style="display: block; margin: auto;" />
-
-The observed *p*-values begin to deviate from their expected distribution under the null hypothesis very early in this plot, suggesting some covariance structure in the data that has not been adequately captured by our model.
 
 Next, we visualise the mean-variance trend in these results with an MD plot.
 
 ``` r
 plot_md(top, fdr = 0.1, 
-        main = 'Differential Expression by Drug Response: \n Nonlesional Skin, Baseline')
+        main = 'Differential Expression by Drug Response: \n Nonlesional Skin, Week 1')
 ```
 
-<img src="Response_Script_files/figure-markdown_github/md-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/md-1.pdf" style="display: block; margin: auto;" />
+</p>
 
 This figure looks reasonable, although it appears there may be more up-regulation than down-regulation in this contrast. A volcano plot will help test this assumption.
 
 ``` r
 plot_volcano(top, fdr = 0.1, 
-             main = 'Differential Expression by Drug Response: \n Lesional Skin, Baseline')
+             main = 'Differential Expression by Drug Response: \n Nonlesional Skin, Week 1')
 ```
 
-<img src="Response_Script_files/figure-markdown_github/volc-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/volc-1.pdf" style="display: block; margin: auto;" />
+</p>
 
 The plot is a little right-shifted, indicating more up- than down-regulation among genes in this contrast, but the difference is not particularly extreme.
 
@@ -510,24 +628,26 @@ A heatmap provides another visual tool with which to explore these results.
 rb <- colorRampPalette(brewer.pal(10, 'RdBu'))(n = 256)
 
 # Create DE gene matrix
-mat <- as.data.frame(mat) %>%
+mat <- as_data_frame(mat) %>%
   mutate(EnsemblID = idx) %>%
   inner_join(top, by = 'EnsemblID') %>%
   filter(q.value <= 0.1) %>%
-  select(grep('Nonlesional.wk00', colnames(mat)),
-         GeneSymbol)
+  select(grep('Nonlesional.wk01', colnames(mat)),
+         EnsemblID)
 deg <- mat %>%
-  select(-GeneSymbol) %>%
+  select(-EnsemblID) %>%
   as.matrix()
-rownames(deg) <- mat$GeneSymbol
-colnames(deg) <- gsub('.Nonlesional.wk00', '', colnames(deg))
+rownames(deg) <- mat$EnsemblID
+colnames(deg) <- gsub('.Nonlesional.wk01', '', colnames(deg))
 
 # Plot heatmap
 aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb,
-         main = paste0('Differentially Expressed Genes, 10% FDR \n Nonlesional Skin, Baseline'),
-         annCol = list(DeltaPASI = pheno$DeltaPASI[grep('Nonlesional.wk00', pheno$Sample)]))
+         main = paste0('Differentially Expressed Genes, 10% FDR \n Nonlesional Skin, Week 1'),
+         annCol = list(DeltaPASI = pheno$DeltaPASI[grep('Nonlesional.wk01', pheno$Sample)]))
 ```
 
-<img src="Response_Script_files/figure-markdown_github/heatmap-1.png" style="display: block; margin: auto;" />
+<p align='center'>
+<img src="Response_Script_files/figure-markdown_github/heatmap-1.pdf" style="display: block; margin: auto;" />
+</p>
 
-The sample-wise clustering in this heatmap makes some sense. Patients are seemingly stratified into strong, medium, and non-responders. The gene-wise clustering, however, is a little harder to parse out. Expression values for each gene vary considerably across libraries, with only a few instances of clear blocks emerging from the data. That could be a byproduct of the relatively low dimensionality in this case - just 46 genes observed across 10 samples. We'll continue with bigger matrices in later analyses.
+The sample-wise clustering in this heatmap makes some sense. Patients are seemingly stratified into strong, medium, and non-responders. The gene-wise clustering suggests a gradual transition from down- to up-regulation as we move from left to right, and a similarly gradual diagonal movement of down-regulated genes across the samples. This is what we would expect given the study's continuous response metric.
