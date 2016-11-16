@@ -96,7 +96,7 @@ ggplot(df, aes(PASI_wk00, PASI_wk12, label = Subject)) +
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/wk0vs12-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/wk0vs12-1.png" style="display: block; margin: auto;" />
 </p>
 
 The black line has an intercept of 0 and a slope of 1, representing zero improvement over the course of treatment. We find that only one subject, S09, falls to the left of this line. The blue line has an intercept of 0 and a slope corresponding to the line of best fit through the data points. To obtain a least squares estimate of the average percent change in PASI observed in our study, we calculate the difference in slope between the black and blue lines.
@@ -127,7 +127,7 @@ ggplot(df, aes(PASI_wk00, DeltaPASI, label = Subject)) +
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/wk0vsdelta-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/wk0vsdelta-1.png" style="display: block; margin: auto;" />
 </p>
 
 The black line represents the regression of delta PASI on baseline for all subjects in the study; the blue line represents the same model, excluding S09. Note how the latter line is practically flat, while the former has a clear positive slope. Correlations between these variables are heavily affected by the presence or absence of this single data point.
@@ -206,7 +206,7 @@ plot_mean_var(mat, type = 'RNA-seq')
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/meanvar-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/meanvar-1.png" style="display: block; margin: auto;" />
 </p>
 
 This plot looks about right for these data.
@@ -221,7 +221,7 @@ plot_density(mat, group = pheno$Tissue, type = 'RNA-seq')
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/dens-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/dens-1.png" style="display: block; margin: auto;" />
 </p>
 
 We find here that blood samples take a unique shape, while skin samples are generally more alike. Still, nonlesional tissue appears to have a slightly higher peak than lesional tissue. There are no clear outliers in this figure, but we cannot make a conclusive judgment about this without further exploration.
@@ -236,7 +236,7 @@ plot_sim_mat(mat, group = pheno$Tissue)
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/sim_mat-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/sim_mat-1.png" style="display: block; margin: auto;" />
 </p>
 
 The dendrogram has perfectly separated blood from skin samples, although three from the latter group are misclassified between lesional and nonlesional tissue. Interestingly, each of these misclassifications comes from week 12, which suggests that positive response to treatment for these patients may have clouded the genetic distinction between lesional and nonlesional tissue over the course of the study.
@@ -251,7 +251,7 @@ plot_pca(mat, group = pheno$Tissue)
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/pca-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/pca-1.png" style="display: block; margin: auto;" />
 </p>
 
 This plot represents perhaps the clearest possible summary of the findings from the last few figures. The first principle component, which captures nearly 60% of the variance in these data, perfectly separates blood from skin samples. The second principle component, which accounts for a little over 9% of the data variance, separates lesional from nonlesional tissue, albeit with some slight overlap at the fringes.
@@ -302,7 +302,7 @@ ggplot(df, aes(Sample, Weight, fill = Tissue)) +
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/wts-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/wts-1.png" style="display: block; margin: auto;" />
 </p>
 
 Library quality does seem to vary across samples, but it's not entirely clear whether that's a function of tissue, time, the interaction between them, or perhaps even subject. To find out, we run a series of *F*-tests. The first three are repeated measures ANOVAs, the latter a simple one-way ANOVA. (Technically, we should remove subject 11 from the repeated measures ANOVAs since this patient's week 12 lesional sample is NA; in practice, it makes no difference here.)
@@ -508,7 +508,7 @@ ggplot(df, aes(Time, DEgenes, fill = Tissue)) +
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/resbar-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/resbar-1.png" style="display: block; margin: auto;" />
 </p>
 
 The single most differentially expressed contrast in these data is nonlesional skin at week 1. No tissue type is especially predictive of response at baseline, although blood and nonlesional skin seem to be tied in this regard, which is a surprisingly strong showing from blood. The poor performance of nonlesional skin across the board is a somewhat surprising result.
@@ -533,7 +533,7 @@ for (i in 1:9) {
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/qq-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/qq-1.png" style="display: block; margin: auto;" />
 </p>
 
 With the exception of nonlesional skin at week 1, these plots suggest a reasonable distribution of *p*-values across the various tissue-times examined in our study. In fact, taken together with our relatively low number of genes declared differentially expressed at 10% FDR, these QQ plots indicate that there are probably a large number of false negatives among our results. The early deviation of observed from expected *p*-values in nonlesional skin at week 1 is probably due to the small sample size. A larger study would likely identify far more genes associated with response and iron out the early wobbles in these QQ plots.
@@ -567,7 +567,7 @@ corrplot(cmat, type = 'lower', tl.cex = 0.75, tl.srt = 45, pch.cex = 0.5,
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/spearman-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/spearman-1.png" style="display: block; margin: auto;" />
 </p>
 
 We find here that gene lists, which are ordered by average linkage hierarchical clustering based on their pairwise Pearson distances, are associated with all and only the other gene lists of the same tissue type. Correlations across tissue types are minimal, although we do detect some correlation between gene rankings from lesional and nonlesional skin samples.
@@ -605,7 +605,7 @@ plot_md(top, fdr = 0.1,
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/md-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/md-1.png" style="display: block; margin: auto;" />
 </p>
 
 This figure looks reasonable, although it appears there may be more up-regulation than down-regulation in this contrast. A volcano plot will help test this assumption.
@@ -616,7 +616,7 @@ plot_volcano(top, fdr = 0.1,
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/volc-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/volc-1.png" style="display: block; margin: auto;" />
 </p>
 
 The plot is a little right-shifted, indicating more up- than down-regulation among genes in this contrast, but the difference is not particularly extreme.
@@ -647,7 +647,7 @@ aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb,
 ```
 
 <p align='center'>
-<img src="Response_Script_files/figure-markdown_github/heatmap-1.pdf" style="display: block; margin: auto;" />
+<img src="Response_Script_files/figure-markdown_github/heatmap-1.png" style="display: block; margin: auto;" />
 </p>
 
 The sample-wise clustering in this heatmap makes some sense. Patients are seemingly stratified into strong, medium, and non-responders. The gene-wise clustering suggests a gradual transition from down- to up-regulation as we move from left to right, and a similarly gradual diagonal movement of down-regulated genes across the samples. This is what we would expect given the study's continuous response metric.
