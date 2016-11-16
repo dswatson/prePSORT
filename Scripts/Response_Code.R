@@ -19,6 +19,7 @@ txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread,
 keep <- rowSums(cpm(txi$counts) > 1) >= 9
 y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
+idx <- rownames(y)
 
 # Winsorise delta PASI distribution
 winsorise <- function(x, multiple = 2) {
@@ -50,7 +51,7 @@ res <- function(contrast) {
            AvgExpr    = AveExpr) %>%
     arrange(p.value) %>%
     select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/', 
+    fwrite(paste0('./Results/Response/RNAseq/', 
                   paste0(contrast, '.txt')), sep = '\t')
 }
 
@@ -64,7 +65,6 @@ corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
 v <- voomWithQualityWeights(y, des, 
                             correlation = corfit$consensus, block = pheno$Subject.Tissue)
 corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
-idx <- rownames(v)
 fit <- lmFit(v, des, correlation = corfit$consensus, block = pheno$Subject.Tissue)
 fit <- eBayes(fit, robust = TRUE)
 for (i in colnames(des)[10:18]) res(i)
