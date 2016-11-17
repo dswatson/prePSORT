@@ -76,11 +76,11 @@ des <- model.matrix(~ 0 + Subject:Tissue + Tissue:Time + Tissue:Time:DeltaPASI,
 des <- des[, !grepl('wk00', colnames(des))]
 colnames(des) <- c(paste(paste0('S', 1:10), 
                          rep(unique(pheno$Tissue), each = 10), sep = '.'),
-                   paste(rep(unique(pheno$Tissue), times = 2),
+                   paste(unique(pheno$Tissue),
                          rep(c('wk01', 'wk12'), each = 3), sep = '.'),
-                   paste(rep(unique(pheno$Tissue), times = 2), 
-                       rep(c('Delta01', 'Delta12'), each = 3), 
-                       'Response', sep = '.'))
+                   paste(unique(pheno$Tissue), 
+                         rep(c('Delta01', 'Delta12'), each = 3), 
+                         'Response', sep = '.'))
 v <- voomWithQualityWeights(y, des)
 urFit <- lmFit(v, des)
 fit <- eBayes(urFit, robust = TRUE)
