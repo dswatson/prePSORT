@@ -298,7 +298,8 @@ ggplot(df, aes(Sample, Weight, fill = Tissue)) +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         plot.title = element_text(hjust = .5),
-        legend.justification = c(0, 1), legend.position = c(0, 1))
+        legend.justification = c(0.01, 0.99), 
+        legend.position = c(0.01, 0.99))
 ```
 
 <p align='center'>
@@ -420,9 +421,9 @@ des <- model.matrix(~ 0 + Subject:Tissue + Tissue:Time + Tissue:Time:DeltaPASI,
 des <- des[, !grepl('wk00', colnames(des))]
 colnames(des) <- c(paste(paste0('S', 1:10), 
                          rep(unique(pheno$Tissue), each = 10), sep = '.'),
-                   paste(rep(unique(pheno$Tissue), times = 2),
+                   paste(unique(pheno$Tissue),
                          rep(c('wk01', 'wk12'), each = 3), sep = '.'),
-                   paste(rep(unique(pheno$Tissue), times = 2), 
+                   paste(unique(pheno$Tissue), 
                        rep(c('Delta01', 'Delta12'), each = 3), 
                        'Response', sep = '.'))
 ```
@@ -465,9 +466,9 @@ df <- expand.grid(Tissue  = c('Blood', 'Lesional', 'Nonlesional'),
 # Populate DEgenes column
 for (i in 1:nrow(df)) {
   df$DEgenes[i] <- fread(paste0('./Results/Response/RNAseq/',
-                         paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.'))) %>%
-                     summarise(sum(q.value < 0.1)) %>%
-                     as.numeric()
+                                paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.'))) %>%
+    summarise(sum(q.value < 0.1)) %>%
+    as.numeric()
 }
 
 # Check table
@@ -504,7 +505,8 @@ ggplot(df, aes(Time, DEgenes, fill = Tissue)) +
        y = 'Differentially Expressed Genes (10% FDR)') + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = .5),
-        legend.justification = c(1, 1), legend.position = c(1, 1))
+        legend.justification = c(0.99, 0.99), 
+        legend.position = c(0.99, 0.99))
 ```
 
 <p align='center'>
@@ -527,8 +529,8 @@ To make sure *p*-values are well behaved, we examine QQ plots of results at each
 par(mfrow = c(3, 3))
 for (i in 1:9) {
   top <- fread(paste0('./Results/Response/RNAseq/',
-               paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.')))
-  qq(top$p.value, cex = 0.25, main = paste('QQ Plot: \n', df[i, 1], df[i, 2]))
+                      paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.')))
+  qq(top$p.value, cex = 0.25, main = paste('QQ Plot:\n', df[i, 1], df[i, 2]))
 }
 ```
 
@@ -536,7 +538,7 @@ for (i in 1:9) {
 <img src="Response_Script_files/figure-markdown_github/qq-1.png" style="display: block; margin: auto;" />
 </p>
 
-With the exception of nonlesional skin at week 1, these plots suggest a reasonable distribution of *p*-values across the various tissue-times examined in our study. In fact, taken together with our relatively low number of genes declared differentially expressed at 10% FDR, these QQ plots indicate that there are probably a large number of false negatives among our results. The early deviation of observed from expected *p*-values in nonlesional skin at week 1 is probably due to the small sample size. A larger study would likely identify far more genes associated with response and iron out the early wobbles in these QQ plots.
+With the exception of lesional skin at baseline and nonlesional skin at week 1, these plots suggest a reasonable distribution of *p*-values across the various tissue-times examined in our study. In fact, taken together with our relatively low number of genes declared differentially expressed at 10% FDR, these QQ plots indicate that there are probably a large number of false negatives among our results. The early deviation of observed from expected *p*-values in some contrasts is probably due to the small sample size. A larger study would likely identify far more genes associated with response and iron out the early wobbles in these QQ plots.
 
 Spearman Correlations
 ---------------------
@@ -551,9 +553,9 @@ cmat <- matrix(nrow = 18, ncol = 18,
 for (i in 1:18) {
   for (j in 1:18) {
     cmat[i, j] <- fread(paste0('./Results/Response/RNAseq/',
-                       paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.'))) %>%
+                               paste(df[i, 1], df[i, 2], 'Response.txt', sep = '.'))) %>%
       inner_join(fread(paste0('./Results/Response/RNAseq/',
-                       paste(df[j, 1], df[j, 2], 'Response.txt', sep = '.'))),
+                              paste(df[j, 1], df[j, 2], 'Response.txt', sep = '.'))),
                  by = 'EnsemblID') %>%
       summarise(cor(Idx.x, Idx.y)) %>%
       as.numeric()
@@ -570,10 +572,10 @@ corrplot(cmat, type = 'lower', tl.cex = 0.75, tl.srt = 45, pch.cex = 0.5,
 <img src="Response_Script_files/figure-markdown_github/spearman-1.png" style="display: block; margin: auto;" />
 </p>
 
-We find here that gene lists, which are ordered by average linkage hierarchical clustering based on their pairwise Pearson distances, are associated with all and only the other gene lists of the same tissue type. Correlations across tissue types are minimal, although we do detect some correlation between gene rankings from lesional and nonlesional skin samples.
+We find here that gene lists, which are ordered by average linkage hierarchical clustering based on their pairwise Spearman distances, are strongly associated with gene lists of the same tissue type. Correlations across tissue types are minimal, although we do detect some relationship between gene rankings from lesional and nonlesional skin samples.
 
-Blood, baseline
----------------
+Nonlesional Skin, Week 1
+------------------------
 
 Let's take a closer look at week 1 results for nonlesional skin, since this is where signal is apparently the strongest. These are the top ten genes associated with biologic response in that contrast.
 
@@ -633,11 +635,11 @@ mat <- as_data_frame(mat) %>%
   inner_join(top, by = 'EnsemblID') %>%
   filter(q.value <= 0.1) %>%
   select(grep('Nonlesional.wk01', colnames(mat)),
-         EnsemblID)
+         GeneSymbol)
 deg <- mat %>%
-  select(-EnsemblID) %>%
+  select(-GeneSymbol) %>%
   as.matrix()
-rownames(deg) <- mat$EnsemblID
+rownames(deg) <- mat$GeneSymbol
 colnames(deg) <- gsub('.Nonlesional.wk01', '', colnames(deg))
 
 # Plot heatmap
