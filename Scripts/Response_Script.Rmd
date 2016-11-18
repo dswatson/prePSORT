@@ -67,7 +67,7 @@ We modify genetic and clinical data prior to modelling.
 
 ## Filter, Normalise Counts
 
-Before conducting EDA or differential expression analysis, we remove genes with less than one count per million (CPM) in at least nine libraries. This ensures that every gene is expressed in at least one of our nine replicates per subject (three tissue types observed at three timepoints each). This threshold follows the filtering guidelines of [Robinson et al. (2010)](https://www.ncbi.nlm.nih.gov/pubmed/19910308). Counts are then TMM normalised prior to modeling ([Robinson & Oshlack, 2010](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-3-r25)). See the extensive `edgeR` [package vignette](https://www.bioconductor.org/packages/3.3/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for more details.
+Before conducting EDA or differential expression analysis, we remove genes with less than one count per million (CPM) in at least nine libraries. This ensures that every gene is expressed in at least one of our nine replicates per subject (three tissue types observed at three timepoints each). This threshold follows the filtering guidelines of [Robinson et al. (2010)](https://www.ncbi.nlm.nih.gov/pubmed/19910308). Counts are then TMM normalised prior to modelling ([Robinson & Oshlack, 2010](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2010-11-3-r25)). See the extensive `edgeR` [package vignette](https://www.bioconductor.org/packages/3.3/bioc/vignettes/edgeR/inst/doc/edgeRUsersGuide.pdf) for more details.
 
 ```{r filt, results = 'markup'}
 # Filter genes
@@ -510,7 +510,7 @@ colnames(deg) <- gsub('.Nonlesional.wk01', '', colnames(deg))
 
 # Plot heatmap
 aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb,
-         main = paste0('Differentially Expressed Genes, 10% FDR \n Nonlesional Skin, Week 1'),
+         main = 'Differentially Expressed Genes, 10% FDR \n Nonlesional Skin, Week 1',
          annCol = list(DeltaPASI = pheno$DeltaPASI[grep('Nonlesional.wk01', pheno$Sample)]))
 ```
 

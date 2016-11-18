@@ -644,7 +644,7 @@ colnames(deg) <- gsub('.Nonlesional.wk01', '', colnames(deg))
 
 # Plot heatmap
 aheatmap(deg, distfun = 'pearson', scale = 'row', col = rb,
-         main = paste0('Differentially Expressed Genes, 10% FDR \n Nonlesional Skin, Week 1'),
+         main = 'Differentially Expressed Genes, 10% FDR \n Nonlesional Skin, Week 1',
          annCol = list(DeltaPASI = pheno$DeltaPASI[grep('Nonlesional.wk01', pheno$Sample)]))
 ```
 
