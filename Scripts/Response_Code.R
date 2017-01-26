@@ -3,6 +3,7 @@ library(data.table)
 library(tximport)
 library(edgeR)
 library(limma)
+library(qvalue)
 library(dplyr)
 
 # Prep data
@@ -18,7 +19,7 @@ txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread,
 keep <- rowSums(cpm(txi$counts) > 1) >= 9
 y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
-idx <- rownames(y)
+e2g <- e2g %>% filter(gene_id %in% rownames(y)) 
 
 # Winsorise delta PASI distribution
 winsorise <- function(x, multiple = 2) {
@@ -29,43 +30,33 @@ winsorise <- function(x, multiple = 2) {
   y <- y + median(x)
   return(y)
 }
-df <- pheno %>%
-  distinct(Subject, DeltaPASI) %>%
-  mutate(Winsorised = winsorise(DeltaPASI)) 
-pheno$DeltaPASI[pheno$Subject == 'S09'] <- df %>%
-  filter(Subject == 'S09') %>%
-  select(Winsorised) %>%
-  as.numeric()
+pheno <- pheno %>% mutate(DeltaPASI = winsorise(DeltaPASI))
 
 # Define results function
-res <- function(contrast) {
-  topTable(fit, number = Inf, sort.by = 'none',
-           coef = contrast) %>%
-    mutate(gene_id = idx) %>%
-    inner_join(e2g, by = 'gene_id') %>%
-    rename(EnsemblID  = gene_id,
-           GeneSymbol = gene_name,
-           p.value    = P.Value,
-           q.value    = adj.P.Val,
-           AvgExpr    = AveExpr) %>%
+res <- function(coef) {
+  topTable(fit, coef = coef, number = Inf, sort.by = 'none') %>%
+    rename(AvgExpr = AveExpr,
+           p.value = P.Value) %>%
+    mutate(q.value = qvalue(p.value)$qvalues,
+              Gene = rownames(v)) %>%
     arrange(p.value) %>%
     mutate(Idx = row_number()) %>%
-    select(Idx, EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
+    select(Idx, Gene, AvgExpr, logFC, p.value, q.value) %>%
     fwrite(paste0('./Results/Response/RNAseq/', 
-                  paste0(contrast, '.txt')), sep = '\t')
+                  paste0(coef, '.txt')), sep = '\t')
 }
 
 ### AT TIME ###
 des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = pheno)
-colnames(des)[10:18] <- c(paste(unique(pheno$Tissue),
-                                rep(unique(pheno$Time), each = 3),
-                                'Response', sep = '.'))
+colnames(des)[10:18] <- paste(unique(pheno$Tissue), rep(unique(pheno$Time), each = 3),
+                              'Response', sep = '.')
 v <- voomWithQualityWeights(y, des)
-corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
-v <- voomWithQualityWeights(y, des, 
-                            correlation = corfit$consensus, block = pheno$Subject.Tissue)
-corfit <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
-fit <- lmFit(v, des, correlation = corfit$consensus, block = pheno$Subject.Tissue)
+icc <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)
+v <- voomWithQualityWeights(y, des, correlation = icc$cor, 
+                            block = pheno$Subject.Tissue)
+icc <- duplicateCorrelation(v, des, block = pheno$Subject.Tissue)  
+v <- avereps(v, e2g$gene_name)
+fit <- lmFit(v, des, correlation = icc$cor, block = pheno$Subject.Tissue)
 fit <- eBayes(fit, robust = TRUE)
 for (i in colnames(des)[10:18]) res(i)
   
@@ -81,6 +72,7 @@ colnames(des) <- c(paste(paste0('S', 1:10),
                          rep(c('Delta01', 'Delta12'), each = 3), 
                          'Response', sep = '.'))
 v <- voomWithQualityWeights(y, des)
+v <- avereps(v, e2g$gene_name)
 urFit <- lmFit(v, des)
 fit <- eBayes(urFit, robust = TRUE)
 for (i in colnames(des)[37:42]) res(i)
