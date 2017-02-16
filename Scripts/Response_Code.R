@@ -113,6 +113,6 @@ cm <- makeContrasts('Blood.Delta11.Response' =
                       Nonlesional.Delta12.Response - Nonlesional.Delta01.Response,
                     levels = des)
 fit <- eBayes(contrasts.fit(urFit, cm))
-foreach(j = coefs) %dopar% res(j)
+foreach(j = colnames(cm)) %dopar% res(j)
 
 
