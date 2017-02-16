@@ -39,7 +39,7 @@ res <- function(coef) {
     arrange(p.value) %>%
     mutate(Idx = row_number()) %>%
     select(Idx, Gene, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Tissue', paste0(coef, '.Genes.txt')), sep = '\t')
+    fwrite(paste0('./Results/Tissue/', paste0(coef, '.Genes.txt')), sep = '\t')
   
   # Modules
   se <- sqrt(fit$s2.post) * fit$stdev.unscaled[, coef]
@@ -62,7 +62,7 @@ res <- function(coef) {
     mutate(q.value = qvalue(p.value)$qvalues,
            Idx = row_number()) %>%
     select(Idx, Module:p.value, q.value) %>%
-    fwrite(paste0('./Results/Tissue/', paste0(coef, '.Modules.txt')), sep = '/t')
+    fwrite(paste0('./Results/Tissue/', paste0(coef, '.Modules.txt')), sep = '\t')
   
 }
 
