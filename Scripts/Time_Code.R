@@ -1,54 +1,79 @@
-# Load libraries
+# Load libraries, register cores, set seed
 library(data.table)
 library(tximport)
 library(edgeR)
 library(limma)
+library(qvalue)
+library(qusage)
 library(dplyr)
+library(doParallel)
+registerDoParallel(6)
+set.seed(123)
 
-# Prep data
-pheno <- fread('./Data/Clinical.csv')
+# Import data
+clin <- fread('./Data/Clinical.csv') 
 t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
-
-# TxImport
-files <- file.path('./Data/RawCounts', pheno$Sample, 'abundance.tsv')
+mods <- fread('./Data/ChaussabelModules.csv')
+mod_list <- lapply(unique(mods$Module), function(m) mods[Module == m, gene_name])
+names(mod_list) <- unique(mods$Module)
+files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread, 
                 countsFromAbundance = 'lengthScaledTPM')
-keep <- rowSums(cpm(txi$counts) > 1) >= 9
-y <- DGEList(txi$counts[keep, ])
+
+# Collapse, filter counts
+y <- avereps(txi$counts, ID = e2g[gene_id %in% rownames(txi$counts), gene_name])
+keep <- rowSums(cpm(y) > 1) >= 9
+y <- DGEList(y[keep, ])
 y <- calcNormFactors(y)
 
-# Define results function
-res <- function(contrast) {
-  topTable(fit, number = Inf, sort.by = 'none',
-           coef = contrast) %>%
-    mutate(gene_id = idx) %>%
-    inner_join(e2g, by = 'gene_id') %>%
-    rename(EnsemblID  = gene_id,
-           GeneSymbol = gene_name,
-           p.value    = P.Value,
-           q.value    = adj.P.Val,
-           AvgExpr    = AveExpr) %>%
+# Results function
+res <- function(coef) {
+  
+  # Genes
+  topTable(fit, coef = coef, number = Inf, sort.by = 'none') %>%
+    rename(AvgExpr = AveExpr,
+           p.value = P.Value) %>%
+    mutate(q.value = qvalue(p.value)$qvalues,
+           Gene = rownames(v)) %>%
     arrange(p.value) %>%
-    select(EnsemblID, GeneSymbol, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Time/', 
-                  paste0(contrast, '.txt')), sep = '\t')
+    mutate(Idx = row_number()) %>%
+    select(Idx, Gene, AvgExpr, logFC, p.value, q.value) %>%
+    fwrite(paste0('./Results/Time/', paste0(coef, '.Genes.txt')), sep = '\t')
+  
+  # Modules
+  se <- sqrt(fit$s2.post) * fit$stdev.unscaled[, coef]
+  sd.a <- se / (fit$sigma * fit$stdev.unscaled[, coef])
+  sd.a[is.infinite(sd.a)] <- 1
+  resid_mat <- residuals(fit, v)
+  overlap <- sapply(mod_list, function(p) sum(p %in% rownames(v)))
+  mod_list <- mod_list[overlap > 0]
+  res <- newQSarray(mean = fit$coefficients[, coef],       # Create QSarray obj
+                    SD = se,
+                    sd.alpha = sd.a,
+                    dof = fit$df.total,
+                    labels = rep('resid', ncol(v)))
+  res <- aggregateGeneSet(res, mod_list, n.points = 2^14)  # PDF per gene set
+  res <- calcVIF(resid_mat, res, useCAMERA = FALSE)        # VIF on resid_mat
+  qsTable(res, number = Inf, sort.by = 'p') %>%
+    rename(p.value = p.Value,
+           Module = pathway.name,
+           logFC = log.fold.change) %>%
+    mutate(q.value = qvalue(p.value)$qvalues,
+           Idx = row_number()) %>%
+    select(Idx, Module:p.value, q.value) %>%
+    fwrite(paste0('./Results/Time/', paste0(coef, '.Modules.txt')), sep = '\t')
+  
 }
 
-# Voom
-des <- model.matrix(~ 0 + Subject:Tissue + Tissue:Time, data = pheno)
-colnames(des) <- c(paste(paste0('S', 1:10), 
-                         rep(unique(pheno$Tissue), each = 10), sep = '.'),
-                   paste(rep(unique(pheno$Tissue), times = 2), 
-                         rep(c('Delta01', 'Delta12'), each = 3), sep = '.'))
+# Fit model
+des <- model.matrix(~ 0 + Subject:Tissue + Tissue:Time, data = clin)
+colnames(des)[31:36] <- paste0(unique(clin$Tissue), 
+                               rep(c('_Delta01', '_Delta12'), each = 3))
 v <- voomWithQualityWeights(y, des)
-urFit <- lmFit(v, des)
-fit <- eBayes(lmFit(v, des), robust = TRUE)
-for (i in colnames(des)[31:36]) res(i)
-cm <- makeContrasts('Blood.Delta11' = Blood.Delta12 - Blood.Delta01,
-                    'Lesional.Delta11' = Lesional.Delta12 - Lesional.Delta01,
-                    'Nonlesional.Delta11' = Nonlesional.Delta12 - Nonlesional.Delta01,
-                    levels = des)
-fit <- eBayes(contrasts.fit(urFit, cm), robust = TRUE)
-for (i in colnames(cm)) res(i)
+fit <- eBayes(lmFit(v, des)) 
+
+# Execute in parallel
+foreach(j = colnames(des)[31:36]) res(j)
+
 
