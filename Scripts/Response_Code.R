@@ -82,9 +82,8 @@ res <- function(coef) {
 
 ### AT TIME ###
 des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = clin)
-coefs <- paste(unique(clin$Tissue), rep(unique(clin$Time), each = 3),
-               'Response', sep = '.')
-colnames(des)[10:18] <- coefs
+colnames(des)[10:18] <- paste(unique(clin$Tissue), rep(unique(clin$Time), each = 3),
+                              'Response', sep = '.')
 v <- voomWithQualityWeights(y, des)
 icc <- duplicateCorrelation(v, des, block = clin$Subject.Tissue)
 v <- voomWithQualityWeights(y, des, correlation = icc$cor, 
@@ -92,19 +91,23 @@ v <- voomWithQualityWeights(y, des, correlation = icc$cor,
 icc <- duplicateCorrelation(v, des, block = clin$Subject.Tissue)  
 fit <- lmFit(v, des, correlation = icc$cor, block = clin$Subject.Tissue)
 fit <- eBayes(fit)
-foreach(j = coefs) %dopar% res(j)
+foreach(j = colnames(des)[10:18]) %dopar% res(j)
   
 ### OVER TIME ###
 des <- model.matrix(~ 0 + Subject:Tissue + Tissue:Time + Tissue:Time:DeltaPASI, 
                     data = clin)
 des <- des[, !grepl('wk00', colnames(des))]
-coefs <- paste(unique(clin$Tissue), rep(c('Delta01', 'Delta12'), each = 3), 
-               'Response', sep = '.')
-colnames(des)[37:42] <- coefs
+colnames(des) <- c(paste(paste0('S', 1:10), 
+                         rep(unique(clin$Tissue), each = 10), sep = '.'),
+                   paste(unique(clin$Tissue),
+                         rep(c('wk01', 'wk12'), each = 3), sep = '.'),
+                   paste(unique(clin$Tissue), 
+                         rep(c('Delta01', 'Delta12'), each = 3), 
+                         'Response', sep = '.')) 
 v <- voomWithQualityWeights(y, des)
 urFit <- lmFit(v, des)
 fit <- eBayes(urFit)
-foreach(j = coefs) %dopar% res(j)
+foreach(j = colnames(des)[37:42]) %dopar% res(j)
 cm <- makeContrasts('Blood.Delta11.Response' = 
                       Blood.Delta12.Response - Blood.Delta01.Response,
                     'Lesional.Delta11.Response' = 
