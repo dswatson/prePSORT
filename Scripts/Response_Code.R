@@ -104,7 +104,7 @@ colnames(des)[37:42] <- coefs
 v <- voomWithQualityWeights(y, des)
 urFit <- lmFit(v, des)
 fit <- eBayes(urFit)
-foreach(j = coefs) res(j)
+foreach(j = coefs) %dopar% res(j)
 cm <- makeContrasts('Blood.Delta11.Response' = 
                       Blood.Delta12.Response - Blood.Delta01.Response,
                     'Lesional.Delta11.Response' = 
