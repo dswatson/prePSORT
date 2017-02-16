@@ -97,25 +97,9 @@ foreach(j = colnames(des)[10:18]) %dopar% res(j)
 des <- model.matrix(~ 0 + Subject:Tissue + Tissue:Time + Tissue:Time:DeltaPASI, 
                     data = clin)
 des <- des[, !grepl('wk00', colnames(des))]
-colnames(des) <- c(paste(paste0('S', 1:10), 
-                         rep(unique(clin$Tissue), each = 10), sep = '.'),
-                   paste(unique(clin$Tissue),
-                         rep(c('wk01', 'wk12'), each = 3), sep = '.'),
-                   paste(unique(clin$Tissue), 
-                         rep(c('Delta01', 'Delta12'), each = 3), 
-                         'Response', sep = '.')) 
+colnames(des)[37:42] <- paste(unique(clin$Tissue), rep(c('Delta01', 'Delta12'), each = 3), 
+                              'Response', sep = '.') 
 v <- voomWithQualityWeights(y, des)
-urFit <- lmFit(v, des)
-fit <- eBayes(urFit)
+fit <- eBayes(lmFit(v, des))
 foreach(j = colnames(des)[37:42]) %dopar% res(j)
-cm <- makeContrasts('Blood.Delta11.Response' = 
-                      Blood.Delta12.Response - Blood.Delta01.Response,
-                    'Lesional.Delta11.Response' = 
-                      Lesional.Delta12.Response - Lesional.Delta01.Response,
-                    'Nonlesional.Delta11.Response' = 
-                      Nonlesional.Delta12.Response - Nonlesional.Delta01.Response,
-                    levels = des)
-fit <- eBayes(contrasts.fit(urFit, cm))
-foreach(j = colnames(cm)) %dopar% res(j)
-
 
