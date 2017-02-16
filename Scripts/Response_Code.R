@@ -76,7 +76,7 @@ res <- function(coef) {
                Idx = row_number()) %>%
     select(Idx, Module:p.value, q.value) %>%
     fwrite(paste0('./Results/Response/RNAseq/',
-                  paste0(coef, 'Modules.txt')), sep = '\t')
+                  paste0(coef, '.Modules.txt')), sep = '\t')
   
 }
 
