@@ -7,7 +7,7 @@ library(qvalue)
 library(qusage)
 library(dplyr)
 library(doParallel)
-registerDoParallel(20)
+registerDoParallel(10)
 set.seed(123)
 
 # Import data
@@ -17,7 +17,10 @@ t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
 mods <- fread('./Data/ChaussabelModules.csv')
 mod_list <- lapply(unique(mods$Module), function(m) mods[Module == m, gene_name])
-names(mod_list) <- unique(mods$Module)
+mods <- mods %>% 
+  select(-gene_name) %>%
+  distinct()
+names(mod_list) <- mods$Module
 files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread, 
                 countsFromAbundance = 'lengthScaledTPM')
@@ -70,11 +73,12 @@ res <- function(coef) {
   res <- calcVIF(resid_mat, res, useCAMERA = FALSE)        # VIF on resid_mat
   qsTable(res, number = Inf, sort.by = 'p') %>%
     rename(p.value = p.Value,
-            Module = pathway.name,
-             logFC = log.fold.change) %>%
+           Module = pathway.name,
+           logFC = log.fold.change) %>%
+    inner_join(mods, by = 'Module') %>%
     mutate(q.value = qvalue(p.value)$qvalues,
-               Idx = row_number()) %>%
-    select(Idx, Module:p.value, q.value) %>%
+           Idx = row_number()) %>%
+    select(Idx, Module, Annotation, logFC, p.value, q.value) %>%
     fwrite(paste0('./Results/Response/RNAseq/',
                   paste0(coef, '.Modules.txt')), sep = '\t')
   
