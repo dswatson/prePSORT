@@ -74,6 +74,6 @@ v <- voomWithQualityWeights(y, des)
 fit <- eBayes(lmFit(v, des)) 
 
 # Execute in parallel
-foreach(j = colnames(des)[31:36]) res(j)
+foreach(j = colnames(des)[31:36]) %dopar% res(j)
 
 
