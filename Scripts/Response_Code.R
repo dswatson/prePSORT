@@ -83,7 +83,7 @@ res <- function(coef) {
 ### AT TIME ###
 des <- model.matrix(~ 0 + Tissue:Time + Tissue:Time:DeltaPASI, data = clin)
 colnames(des)[10:18] <- paste(unique(clin$Tissue), rep(unique(clin$Time), each = 3),
-                              'Response', sep = '.')
+                              'Response', sep = '_')
 v <- voomWithQualityWeights(y, des)
 icc <- duplicateCorrelation(v, des, block = clin$Subject.Tissue)
 v <- voomWithQualityWeights(y, des, correlation = icc$cor, 
@@ -98,7 +98,7 @@ des <- model.matrix(~ 0 + Subject:Tissue + Tissue:Time + Tissue:Time:DeltaPASI,
                     data = clin)
 des <- des[, !grepl('wk00', colnames(des))]
 colnames(des)[37:42] <- paste(unique(clin$Tissue), rep(c('Delta01', 'Delta12'), each = 3), 
-                              'Response', sep = '.') 
+                              'Response', sep = '_') 
 v <- voomWithQualityWeights(y, des)
 fit <- eBayes(lmFit(v, des))
 foreach(j = colnames(des)[37:42]) %dopar% res(j)
