@@ -7,7 +7,7 @@ library(qvalue)
 library(qusage)
 library(dplyr)
 library(doParallel)
-registerDoParallel(10)
+registerDoParallel(20)
 set.seed(123)
 
 # Import data
@@ -15,12 +15,7 @@ clin <- fread('./Data/Clinical.csv') %>%
   mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.'))
 t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
-mods <- fread('./Data/ChaussabelModules.csv')
-mod_list <- lapply(unique(mods$Module), function(m) mods[Module == m, gene_name])
-mods <- mods %>% 
-  select(-gene_name) %>%
-  distinct()
-names(mod_list) <- mods$Module
+m2g <- readRDS('./Data/LiModules.GeneSymbols.rds')
 files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread, 
                 countsFromAbundance = 'lengthScaledTPM')
