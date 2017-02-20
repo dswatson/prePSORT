@@ -14,12 +14,7 @@ set.seed(123)
 clin <- fread('./Data/Clinical.csv') 
 t2g <- fread('./Data/Ensembl.Hs79.Tx.csv')
 e2g <- fread('./Data/Ensembl.Hs79.GeneSymbols.csv')
-mods <- fread('./Data/ChaussabelModules.csv')
-mod_list <- lapply(unique(mods$Module), function(m) mods[Module == m, gene_name])
-mods <- mods %>% 
-  select(-gene_name) %>%
-  distinct()
-names(mod_list) <- mods$Module
+mods <- readRDS('./Data/LiModules.rds')
 files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread, 
                 countsFromAbundance = 'lengthScaledTPM')
@@ -49,23 +44,23 @@ res <- function(coef) {
   sd.a <- se / (fit$sigma * fit$stdev.unscaled[, coef])
   sd.a[is.infinite(sd.a)] <- 1
   resid_mat <- residuals(fit, v)
-  overlap <- sapply(mod_list, function(p) sum(p %in% rownames(v)))
-  mod_list <- mod_list[overlap > 0]
+  overlap <- sapply(mods$m2g, function(p) sum(p %in% rownames(v)))
+  mods$m2g <- mods$m2g[overlap > 0]
   res <- newQSarray(mean = fit$coefficients[, coef],       # Create QSarray obj
                     SD = se,
                     sd.alpha = sd.a,
                     dof = fit$df.total,
                     labels = rep('resid', ncol(v)))
-  res <- aggregateGeneSet(res, mod_list, n.points = 2^14)  # PDF per gene set
+  res <- aggregateGeneSet(res, mods$m2g, n.points = 2^14)  # PDF per gene set
   res <- calcVIF(resid_mat, res, useCAMERA = FALSE)        # VIF on resid_mat
   qsTable(res, number = Inf, sort.by = 'p') %>%
     rename(p.value = p.Value,
            Module = pathway.name,
            logFC = log.fold.change) %>%
-    inner_join(mods, by = 'Module') %>%
+    inner_join(mods$anno, by = 'Module') %>%
     mutate(q.value = qvalue(p.value)$qvalues,
            Idx = row_number()) %>%
-    select(Idx, Module, Annotation, logFC, p.value, q.value) %>%
+    select(Idx, Module, Title, Category, logFC, p.value, q.value) %>%
     fwrite(paste0('./Results/Time/', paste0(coef, '.Modules.txt')), sep = '\t')
   
 }
