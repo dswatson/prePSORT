@@ -1,2 +1,2 @@
 # PSORT
-Data, scripts, and results for PSORT study
+Scripts and results for PSORT study.
