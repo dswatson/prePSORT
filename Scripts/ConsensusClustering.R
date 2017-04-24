@@ -62,7 +62,8 @@ consensus <- function(coef) {
   tissue.time <- gsub('.Response', '', coef)
   samples <- grep(tissue.time, clin$Sample)
   mat <- v$E[genes, samples]
-  cc <- ConsensusClusterPlus(mat, maxK = 5, reps = 1000, pItem = 0.9, pFeature = 0.9)
+  cc <- ConsensusClusterPlus(mat, maxK = 5, reps = 1e4, pItem = 0.9, pFeature = 0.9,
+                             plot = 'png')
   
   # Determine optimal k from PAC index
   suppressWarnings(
@@ -76,31 +77,28 @@ consensus <- function(coef) {
       unique() %>%
       as.data.frame()
   )
-  
-  # Plot PAC scores
-  p <- ggplot(PAC, aes(k, PAC, fill = k)) + 
-    geom_bar(stat = 'identity') + 
-    scale_fill_d3() + 
-    labs(title = coef) + 
-    theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5))
-  ggsave(paste0('./Results/ConsensusClusters/', coef, '.pdf'), plot = p)
-  
-  # Fill clusters data frame
   k <- PAC %>%
+    mutate(k = as.numeric(k) + 1) %>%
     filter(PAC == min(PAC)) %>%
+    filter(k == min(k)) %>%
     select(k) %>%
     as.numeric() 
+  
+  # Fill clusters data frame
   dm <- as.dist(1 - cor(mat))
   hc <- hclust(dm, method = 'average')
-  clusters$new <- cutree(hc, k = k)
+  assignment <- cutree(hc, k = k)
+  if (tissue.time == 'Lesional.wk12') {
+    assignment <- c(assignment, NA)
+  }
+  clusters$new <- assignment
   colnames(clusters)[colnames(clusters) == 'new'] <- coef
   return(clusters)
+  
 }
 
 # Execute in parallel
 combo <- function(x, y) inner_join(x, y, by = 'Subject')
-foreach(coef = coefs, .combine = combo) %dopar% consensus(coef)
+clusters <- foreach(coef = coefs, .combine = combo) %dopar% consensus(coef)
 fwrite(clusters, './Results/ConsensusClusters/clusters.csv')
-
 
