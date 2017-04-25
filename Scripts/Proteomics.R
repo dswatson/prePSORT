@@ -22,7 +22,9 @@ winsorise <- function(x, multiple = 2) {
   y <- y + median(x)
   return(y)
 }
-clin <- clin %>% mutate(DeltaPASI = winsorise(DeltaPASI))
+clin <- clin %>%
+  group_by(Tissue, Time) %>%
+  mutate(DeltaPASI = winsorise(DeltaPASI))
 
 # Define results function
 res <- function(contrast) {
