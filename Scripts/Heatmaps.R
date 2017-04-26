@@ -12,16 +12,18 @@ mat <- readRDS('./Data/mat_mRNA.rds')
 fit <- readRDS('./Data/fit_mRNA.rds')
 clin <- read.csv('./Data/Clinical.csv')
 sup <- read.csv('./Results/Clusters/Supervised/PAM.csv') 
-sup <- sup[, grepl('mRNA', colnames(sup))]
+sup <- sup[, grep('mRNA', colnames(sup))]
 unsup <- read.csv('./Results/Clusters/Unsupervised/PAM.csv')
-unsup <- unsup[, grepl('mRNA', colnames(unsup))]
+unsup <- unsup[, grep('mRNA', colnames(unsup))]
 
-# Create heatmaps
-coefs <- colnames(fit)[grepl('wk00.Response', colnames(fit))]
+# Prep data, colors
+coefs <- colnames(fit)[grep('wk00.Response', colnames(fit))]
 n_genes <- round(0.01 * nrow(mat))
 rb <- rev(colorRampPalette(brewer.pal(10, 'RdBu'))(n = 256))
 cols <- pal_d3()(6)
 cols <- list(cols[1:2], cols[3:4], cols[5:6])
+
+# Create heatmaps
 for (coef in coefs) {
   top <- topTable(fit, coef = coef, number = n_genes, sort.by = 'p')
   genes <- rownames(top)
