@@ -19,9 +19,10 @@ unsup <- unsup[, grep('mRNA', colnames(unsup))]
 # Prep data, colors
 coefs <- colnames(fit)[grep('wk00.Response', colnames(fit))]
 n_genes <- round(0.01 * nrow(mat))
-rb <- rev(colorRampPalette(brewer.pal(10, 'RdBu'))(n = 256))
-cols <- pal_d3()(6)
-cols <- list(cols[1:2], cols[3:4], cols[5:6])
+rb <- colorRampPalette(rev(brewer.pal(10, 'RdBu')))(n = 256)
+greys <- colorRampPalette(brewer.pal(9, 'Greys'))(n = 256)
+d3 <- pal_d3()(6)
+cols <- list(greys, d3[1:2], d3[3:4], d3[5:6])
 
 # Create heatmaps
 for (coef in coefs) {
@@ -34,9 +35,10 @@ for (coef in coefs) {
   pdf(paste0('./Results/Heatmaps/', tissue, '_wk00.pdf'), height = 8, width = 5)
   aheatmap(top, distfun = 'pearson', scale = 'row', col = rb, hclustfun = 'average',
            main = paste0('Top 1% of Genes by Response:\n', tissue, ', wk00'),
-           annCol = list('PASI 75' = pheno$PASI_75,
-                      'Supervised' = sup[, grep(tissue, colnames(sup))],
-                    'Unsupervised' = unsup[, grep(tissue, colnames(unsup))]),
+           annCol = list('Delta PASI' = pheno$DeltaPASI,
+                            'PASI 75' = pheno$PASI_75,
+                         'Supervised' = sup[, grep(tissue, colnames(sup))],
+                       'Unsupervised' = unsup[, grep(tissue, colnames(unsup))]),
            annColors = cols, border_color = 'black')
   dev.off()
 }
