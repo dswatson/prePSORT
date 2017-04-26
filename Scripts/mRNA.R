@@ -47,8 +47,7 @@ res <- function(coef) {
     mutate(q.value = qvalue(p.value)$qvalues,
            Gene = rownames(v)) %>%
     arrange(p.value) %>%
-    mutate(Idx = row_number()) %>%
-    select(Idx, Gene, AvgExpr, logFC, p.value, q.value) %>%
+    select(Gene, AvgExpr, logFC, p.value, q.value) %>%
     fwrite(paste0('./Results/Response/mRNA/', 
                   paste0(coef, '.Response.txt')), sep = '\t')
   
