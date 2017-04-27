@@ -178,8 +178,8 @@ aheatmap(mat, distfun = 'pearson', scale = 'row', col = rb, hclustfun = 'average
          main = paste0('Top 5% of Probes by Response:\n Proteomics, wk00'),
          annCol = list('Delta PASI' = clin$DeltaPASI,
                           'PASI 75' = clin$PASI_75,
-                       'Supervised' = supervised,
-                     'Unsupervised' = unsupervised),
+                       'Supervised' = as.factor(supervised),
+                     'Unsupervised' = as.factor(unsupervised)),
          annColors = cols, border_color = 'black')
 ```
 
