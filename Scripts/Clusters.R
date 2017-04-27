@@ -1,3 +1,5 @@
+### CLUSTERS ###
+
 # Load libraries, register cores, set seed
 library(data.table)
 library(limma)
@@ -43,21 +45,20 @@ clusters <- function(plat, supervised = TRUE) {
     samples <- grep('wk00', colnames(mat))
   }
   
-  # Median center data, filter 
+  # Median centre data, filter 
   mat <- mat[, samples]
   mat <- sweep(mat, 1, apply(mat, 1, median))
   top <- round(0.5 * nrow(mat))
   if (supervised) {
     hits <- topTable(fit, coef = coef, number = top, sort.by = 'p')
-    genes <- rownames(hits)
-    dm <- dist.matrix(t(mat[genes, ]), method = 'euclidean')
+    hits <- rownames(hits)
+    dm <- dist.matrix(t(mat[hits, ]), method = 'euclidean')
   } else {
     dm <- matrix(nrow = ncol(mat), ncol = ncol(mat))
-    top_idx <- nrow(mat) - top + 1
     for (i in 2:ncol(mat)) {
       for (j in 1:(i - 1)) {
-        dm[i, j] <- sqrt(sum(sort.int((mat[, i] - mat[, j])^2,
-                                      partial = top_idx)[top_idx:nrow(mat)]))
+        hits <- order((dat[, i] - dat[, j])^2, decreasing = TRUE)[1:top]
+        dm[i, j] <- sqrt(sum((dat[hits, i] - dat[hits, j])^2))
       }
     }
   }
@@ -80,9 +81,9 @@ plats <- c('mRNA_Blood', 'mRNA_Lesional', 'mRNA_Nonlesional',
            'miRNA_Blood', 'Prot_Blood')
 foreach(plat = plats, .combine = combo) %dopar% 
   clusters(plat, supervised = TRUE) %>%
-  fwrite('./Results/Clusters/Supervised/PAM.csv')
+  fwrite('./Results/Clusters/Supervised.csv')
 foreach(plat = plats, .combine = combo) %dopar% 
   clusters(plat, supervised = FALSE) %>%
-  fwrite('./Results/Clusters/Unsupervised/PAM.csv')
+  fwrite('./Results/Clusters/Unsupervised.csv')
 
 
