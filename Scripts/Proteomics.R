@@ -1,3 +1,5 @@
+### PROTEOMICS ###
+
 # Load libraries
 library(data.table)
 library(limma)
@@ -24,19 +26,19 @@ winsorise <- function(x, multiple = 2) {
 }
 clin <- clin %>%
   group_by(Tissue, Time) %>%
-  mutate(DeltaPASI = winsorise(DeltaPASI))
+  mutate(DeltaPASI = winsorise(DeltaPASI)) %>%
+  ungroup()
 
 # Define results function
-res <- function(contrast) {
-  topTable(fit, number = Inf, sort.by = 'none', coef = contrast) %>%
+res <- function(coef) {
+  topTable(fit, number = Inf, sort.by = 'none', coef = coef) %>%
     mutate(Analyte = rownames(mat),
            q.value = qvalue(P.Value)$qvalues) %>%
     rename(p.value = P.Value,
            AvgExpr = AveExpr) %>%
     arrange(p.value) %>%
     select(Analyte, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/Proteomics/', 
-                  paste0(contrast, '.txt')), sep = '\t')
+    fwrite(paste0('./Results/Response/Proteomics/', coef, '.txt'), sep = '\t')
 }
 
 # Fit model
@@ -44,7 +46,9 @@ des <- model.matrix(~ 0 + Time + Time:DeltaPASI, data = clin)
 colnames(des)[4:6] <- c(paste(unique(clin$Time), 'Response', sep = '.'))
 icc <- duplicateCorrelation(mat, des, block = clin$Subject)
 fit <- lmFit(mat, des, correlation = icc$cor, block = clin$Subject)
-fit <- eBayes(fit)
+fit <- eBayes(fit, robust = TRUE)
+
+# Export
 for (j in colnames(des)[4:6]) res(j)
 saveRDS(mat, './Data/mat_prot.rds')
 saveRDS(fit, './Data/fit_prot.rds')

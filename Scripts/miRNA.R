@@ -1,3 +1,5 @@
+### miRNA ###
+
 # Load libraries
 library(data.table)
 library(edgeR)
@@ -28,19 +30,19 @@ winsorise <- function(x, multiple = 2) {
 }
 clin <- clin %>%
   group_by(Tissue, Time) %>%
-  mutate(DeltaPASI = winsorise(DeltaPASI))
+  mutate(DeltaPASI = winsorise(DeltaPASI)) %>%
+  ungroup()
 
 # Define results function
-res <- function(contrast) {
-  topTable(fit, number = Inf, sort.by = 'none', coef = contrast) %>%
+res <- function(coef) {
+  topTable(fit, number = Inf, sort.by = 'none', coef = coef) %>%
     mutate(Gene = rownames(y),
         q.value = qvalue(P.Value)$qvalues) %>%
     rename(p.value = P.Value,
            AvgExpr = AveExpr) %>%
     arrange(p.value) %>%
     select(Gene, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/miRNA/', 
-                  paste0(contrast, '.txt')), sep = '\t')
+    fwrite(paste0('./Results/Response/miRNA/', coef, '.txt'), sep = '\t')
 }
 
 # Fit model
@@ -52,7 +54,9 @@ v <- voomWithQualityWeights(y, des, correlation = icc$cor,
                             block = clin$Subject)
 icc <- duplicateCorrelation(v, des, block = clin$Subject)
 fit <- lmFit(v, des, correlation = icc$cor, block = clin$Subject)
-fit <- eBayes(fit)
+fit <- eBayes(fit, robust = TRUE)
+
+# Export
 for (j in colnames(des)[4:6]) res(j)
 saveRDS(v$E, './Data/mat_miRNA.rds')
 saveRDS(fit, './Data/fit_miRNA.rds')

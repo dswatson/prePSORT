@@ -1,14 +1,12 @@
-# Load libraries, register cores, set seed
+### mRNA ###
+
+# Load libraries
 library(data.table)
 library(tximport)
 library(edgeR)
 library(limma)
 library(qvalue)
-library(qusage)
 library(dplyr)
-library(doMC)
-registerDoMC(4)
-set.seed(123)
 
 # Import data
 clin <- fread('./Data/Clinical.csv') %>%
@@ -35,7 +33,8 @@ winsorise <- function(x, multiple = 2) {
 }
 clin <- clin %>%
   group_by(Tissue, Time) %>%
-  mutate(DeltaPASI = winsorise(DeltaPASI))
+  mutate(DeltaPASI = winsorise(DeltaPASI)) %>%
+  ungroup()
 
 # Results function
 res <- function(coef) {
@@ -48,8 +47,7 @@ res <- function(coef) {
            Gene = rownames(v)) %>%
     arrange(p.value) %>%
     select(Gene, AvgExpr, logFC, p.value, q.value) %>%
-    fwrite(paste0('./Results/Response/mRNA/', 
-                  paste0(coef, '.Response.txt')), sep = '\t')
+    fwrite(paste0('./Results/Response/mRNA/', coef, '.txt'), sep = '\t')
   
 }
 
@@ -63,8 +61,10 @@ v <- voomWithQualityWeights(y, des, correlation = icc$cor,
                             block = clin$Subject.Tissue)
 icc <- duplicateCorrelation(v, des, block = clin$Subject.Tissue)  
 fit <- lmFit(v, des, correlation = icc$cor, block = clin$Subject.Tissue)
-fit <- eBayes(fit)
-foreach(j = colnames(des)[10:18]) %dopar% res(j)
+fit <- eBayes(fit, robust = TRUE)
+
+# Export
+for (j in colnames(des)[10:18]) res(j)
 saveRDS(v$E, './Data/mat_mRNA.rds')
 saveRDS(fit, './Data/fit_mRNA.rds')
 
