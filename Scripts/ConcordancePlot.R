@@ -1,3 +1,5 @@
+### CLUSTER CONCORDANCE PLOTS ###
+
 # Load libraries
 library(data.table)
 library(infotheo)
@@ -8,11 +10,10 @@ library(dplyr)
 clin <- fread('./Data/Clinical.csv') %>%
   distinct(Subject, PASI_75) 
 
-
-### SUPERVISED ###
+### Supervised Clusters ###
 
 # Load cluster assignments
-df <- read.csv('./Results/Clusters/Supervised/PAM.csv', row.names = 1) %>%
+df <- read.csv('./Results/Clusters/Supervised.csv', row.names = 1) %>%
   mutate(PASI_75 = clin$PASI_75)
 
 # Create mutual information matrix
@@ -32,11 +33,10 @@ corrplot(mat, method = 'shade', is.corr = FALSE, type = 'lower', diag = FALSE,
          addgrid.col = 'black', addCoef.col = 'black',
          tl.cex = 0.65, tl.col = 'black', tl.srt = 45, cl.lim = c(0, 1))
 
-
-### UNSUPERVISED ###
+### Unsupervised Clusters ###
 
 # Load cluster assignments
-df <- read.csv('./Results/Clusters/Unsupervised/PAM.csv', row.names = 1) %>%
+df <- read.csv('./Results/Clusters/Unsupervised.csv', row.names = 1) %>%
   mutate(PASI_75 = clin$PASI_75)
 
 # Create mutual information matrix
