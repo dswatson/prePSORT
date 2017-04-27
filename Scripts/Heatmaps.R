@@ -11,12 +11,12 @@ library(dplyr)
 mat <- readRDS('./Data/mat_mRNA.rds')
 fit <- readRDS('./Data/fit_mRNA.rds')
 clin <- read.csv('./Data/Clinical.csv')
-sup <- read.csv('./Results/Clusters/Supervised/PAM.csv') 
+sup <- read.csv('./Results/Clusters/Supervised.csv') 
 sup <- sup[, grep('mRNA', colnames(sup))]
-unsup <- read.csv('./Results/Clusters/Unsupervised/PAM.csv')
+unsup <- read.csv('./Results/Clusters/Unsupervised.csv')
 unsup <- unsup[, grep('mRNA', colnames(unsup))]
 
-# Prep data, colors
+# Prep data, colour palettes
 coefs <- colnames(fit)[grep('wk00.Response', colnames(fit))]
 n_genes <- round(0.01 * nrow(mat))
 rb <- colorRampPalette(rev(brewer.pal(10, 'RdBu')))(n = 256)
