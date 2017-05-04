@@ -2,7 +2,7 @@ Clusters
 ================
 
 -   [Overview](#overview)
--   [Load, Prepate Data](#load-prepate-data)
+-   [Load, Prepare Data](#load-prepare-data)
 -   [Filtering](#filtering)
 -   [t-SNE](#t-sne)
 -   [Partitioning Around Medoids](#partitioning-around-medoids)
@@ -38,7 +38,7 @@ Once data have been modelled (see [Response]()), we use the outputs of our diffe
 
 Ideally, optimal cluster number *k* would be established via a resampling procedure such as consensus clustering ([Monti et al., 2003](https://pdfs.semanticscholar.org/1f29/553ecbaa388b6be3402bc7af28178f5e24ef.pdf)). However, given our limited sample size, we chose to fix *k* = 2 and test for cluster concordance with clinical outcomes. For simplicity's sake, we will work through a single example here. A complete analysis loop that executes all clustering steps in parallel may be found in this repository's accompanying Clusters.R script.
 
-Load, Prepate Data
+Load, Prepare Data
 ==================
 
 ``` r
@@ -65,8 +65,8 @@ Filtering
 This is where supervised and unsupervised approaches diverge. For the former, we simply take the top half of all probes as ranked by *p*-value of the relevant differential expression test.
 
 ``` r
-top <- topTable(fit, coef = 'wk00.Response', number = n_probes, sort.by = 'p')
-hits <- rownames(top)
+top <- topTable(fit, coef = 'wk00.Response', number = Inf, sort.by = 'p')
+hits <- rownames(top)[seq_len(n_probes)]
 dm_sup <- dist(t(mat[hits, ]))
 ```
 
@@ -91,7 +91,7 @@ t-SNE
 We now perform t-SNE on the distance matrix. This algorithm embeds a high-dimensional manifold in just two dimensions with a focus on preserving local structure, which makes it especially attractive for clustering omic data. We can visualise the projection using the `plot_tsne` function from the `bioplotr` package.
 
 ``` r
-plot_tsne(mat[rownames(top), ], group = list('PASI 75' = clin$PASI_75), 
+plot_tsne(mat[hits, ], group = list('PASI 75' = clin$PASI_75), 
           perplexity = 2, label = TRUE,
           title = 'Supervised Filtering: Proteomics, wk00')
 ```
@@ -156,7 +156,7 @@ mi <- mutinformation(supervised, unsupervised)
 
     ## [1] 1
 
-With *k* = 2, the maximal mutual information between groupings is 1 bit. Since these two clusterings are perfectly concordant, this result unsurprising.
+With *k* = 2, the maximal mutual information between groupings is 1 bit. Since these two clusterings are perfectly concordant, this result is unsurprising.
 
 Heatmap
 =======
@@ -165,7 +165,9 @@ These cluster assignments can be visualised along with clinical information as a
 
 ``` r
 # Trim matrix
-mat <- mat[rownames(top), ]
+top_quarter <- round(0.25 * nrow(mat)) 
+hits <- rownames(top)[seq_len(top_quarter)]
+mat <- mat[hits, ]
 
 # Prepare colour palettes
 rb <- colorRampPalette(rev(brewer.pal(10, 'RdBu')))(n = 256)
@@ -175,7 +177,7 @@ cols <- list(greys, d3[1:2], d3[3:4], d3[5:6])
 
 # Build heatmap
 aheatmap(mat, distfun = 'pearson', scale = 'row', col = rb, hclustfun = 'average',
-         main = paste0('Top 5% of Probes by Response:\n Proteomics, wk00'),
+         main = paste0('Top 25% of Probes by Response:\n Proteomics, wk00'),
          annCol = list('Delta PASI' = clin$DeltaPASI,
                           'PASI 75' = clin$PASI_75,
                        'Supervised' = as.factor(supervised),
