@@ -6,6 +6,7 @@ library(data.table)
 library(plyr)
 library(randomForest)
 library(caret)
+library(edgeR)
 library(dplyr)
 library(doMC)
 registerDoMC(cores = 20)
@@ -39,6 +40,9 @@ y <- as.factor(clin$PASI_75)
 trCtrl <- trainControl(method = 'cv', summaryFunction = mnLogLoss, 
                        classProbs = TRUE, seeds = tr_seeds)
 my_rfFuncs <- rfFuncs
+my_rfFuncs$fit <- function(x, y, first, last, ...) {
+  randomForest(x, y, ...)
+}
 my_rfFuncs$summary <- mnLogLoss
 rfeCtrl <- rfeControl(functions = my_rfFuncs, rerank = TRUE, 
                       method = 'cv', seeds = rfe_seeds)
@@ -132,7 +136,7 @@ loss <- function(data_type) {
     
   } else if (data_type == 'Blood_Proteomics') {
     
-    mat <- log2(prot + 1)
+    mat <- log2(prot)
     x <- t(mat)
     out <- data_frame(Blood_Proteomics = fill(data_type, x))
     return(out)
