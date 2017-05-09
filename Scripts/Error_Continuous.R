@@ -33,7 +33,7 @@ fill <- function(data_type) {
   while (!success) {
     if (data_type == 'Clinical') {
       fit <- train(x, y, method = 'rf', trControl = trCtrl, 
-                   tuneGrid = data.frame(.mtry = 4:6))
+                   tuneGrid = data.frame(.mtry = 8:10))
     } else {
       fit <- sbf(x, y, sbfControl = sbfCtrl)
     }
@@ -59,7 +59,7 @@ filter_fns <- list(
   summary = defaultSummary,
   fit = function(x, y) {
     x <- mRNA_mat[colnames(x), rownames(x)]
-    default_mtry <- floor(sqrt(nrow(x)))
+    default_mtry <- round(nrow(x) / 3)
     tunes <- data.frame(.mtry = c(round(0.9 * default_mtry), 
                                   default_mtry, 
                                   round(1.1 * default_mtry)))
@@ -118,7 +118,7 @@ err_cont$Nonlesional_mRNA <- fill('Nonlesional_mRNA')
 # Blood_miRNA
 filter_fns$fit <- function(x, y) {
   x <- miRNA_mat[colnames(x), rownames(x)]
-  default_mtry <- floor(sqrt(nrow(x)))
+  default_mtry <- round(nrow(x) / 3)
   tunes <- data.frame(.mtry = c(round(0.9 * default_mtry), 
                                 default_mtry, 
                                 round(1.1 * default_mtry)))
@@ -140,7 +140,7 @@ err_cont$Blood_miRNA <- fill('Blood_miRNA')
 
 # Blood_Proteomics
 filter_fns$fit <- function(x, y) {
-  default_mtry <- floor(sqrt(ncol(x)))
+  default_mtry <- round(ncol(x) / 3)
   tunes <- data.frame(.mtry = c(round(0.9 * default_mtry), 
                                 default_mtry,
                                 round(1.1 * default_mtry)))
