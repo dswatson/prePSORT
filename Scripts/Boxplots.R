@@ -15,7 +15,7 @@ df <- gather(df_cat, Data, Loss) %>%
 # Build plot
 ggplot(df, aes(Data, Loss, fill = Data)) +
   geom_boxplot() + 
-  labs(title = 'Predictive Error:\nCategorical Response',
+  labs(title = 'Test Error:\nCategorical Response',
        y = 'Cross Entropy') + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5),
@@ -38,7 +38,7 @@ df <- df %>%
   ungroup()
 ggplot(df, aes(Data, Loss, fill = Data)) +
   geom_boxplot() + 
-  labs(title = 'Predictive Error:\nCategorical Response',
+  labs(title = 'Test Error:\nCategorical Response',
        y = 'Cross Entropy') + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5),
@@ -55,7 +55,7 @@ df <- gather(df_cont, Data, Loss) %>%
 # Build plot
 ggplot(df, aes(Data, Loss, fill = Data)) +
   geom_boxplot() + 
-  labs(title = 'Predictive Error:\nContinuous Response',
+  labs(title = 'Test Error:\nContinuous Response',
        y = 'RMSE') + 
   theme_bw() + 
   theme(plot.title = element_text(hjust = 0.5),
