@@ -13,7 +13,7 @@ clin <- fread('./Data/Clinical.csv') %>%
 ### Supervised Clusters ###
 
 # Load cluster assignments
-df <- read.csv('./Results/Clusters/Supervised.csv', row.names = 1) %>%
+df <- read.csv('./Results/SupervisedClusters.csv', row.names = 1) %>%
   mutate(PASI_75 = clin$PASI_75)
 
 # Create mutual information matrix
@@ -36,7 +36,7 @@ corrplot(mat, method = 'shade', is.corr = FALSE, type = 'lower', diag = FALSE,
 ### Unsupervised Clusters ###
 
 # Load cluster assignments
-df <- read.csv('./Results/Clusters/Unsupervised.csv', row.names = 1) %>%
+df <- read.csv('./Results/UnsupervisedClusters.csv', row.names = 1) %>%
   mutate(PASI_75 = clin$PASI_75)
 
 # Create mutual information matrix
