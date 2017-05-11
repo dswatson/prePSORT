@@ -6,6 +6,7 @@ library(data.table)
 library(plyr)
 library(randomForest)
 library(caret)
+library(edgeR)
 library(dplyr)
 library(doMC)
 registerDoMC(cores = 20)
@@ -47,21 +48,23 @@ y <- clin$DeltaPASI
 # Helper functions
 trCtrl <- trainControl(method = 'cv', seeds = tr_seeds)
 my_rfFuncs <- rfFuncs
+my_rfFuncs$fit <- function(x, y, first, last, ...) {
+  randomForest(x, y, ntree = 1000, importance = TRUE, ...)
+}
 my_rfFuncs$rank <- function(object, x, y) {
-  df <- data.frame(var = colnames(x),
-         Overall = object$importance[, 1]) %>%
-    arrange(desc(Overall))  # Or not desc?
-  rownames(df) <- df$var
-  return(df)
+  imp <- importance(object, type = 1, scale = FALSE)
+  data_frame(Overall = imp[, 1], 
+             var = rownames(imp)) %>%
+    arrange(desc(Overall)) 
 }
 rfeCtrl <- rfeControl(functions = my_rfFuncs, rerank = TRUE, 
                       method = 'cv', seeds = rfe_seeds)
 subsets <- function(x) {
-  out <- 10 + ((x - 10) / 400) * seq_len(19)^2
-  return(round(out))
+  round(10 + ((x - 10) / 400) * seq_len(19)^2)
 }
 fill <- function(data_type, x) {
-  out <- rep(NA, 1000)
+  out <- data.frame(Loss = rep(NA, 1000),
+                    Tune = 0)
   success <- FALSE
   while (!success) {
     if (data_type == 'Clinical') {
@@ -69,22 +72,25 @@ fill <- function(data_type, x) {
                    trControl = trCtrl)
     } else {
       fit <- rfe(x, y, sizes = subsets(ncol(x)), rfeControl = rfeCtrl)
-      cat(paste('Following RFE, the optimal random forest model for', data_type,
-                'contains', fit$bestSubset, 'probes.'))
     }
-    NA_idx <- which(is.na(out))
-    if (length(NA_idx) > 0) {
-      i <- min(NA_idx)
+    isNA <- which(is.na(out$Loss))
+    if (length(isNA) > 0) {
+      i <- min(isNA)
       if (is(fit, 'rfe')) {
         res <- fit$resample %>% filter(Variables == fit$bestSubset)
+        loss <- res$logLoss
+        tune <- res$Variables
       } else {
-        res <- fit$resample
+        loss <- fit$resample$logLoss 
+        tune <- fit$bestTune$mtry
       }
-      out[i:(i + 9)] <- res$RMSE
+      out$Loss[i:(i + 9)] <- loss
+      out$Tune[i:(i + 9)] <- tune
     } else {
       success <- TRUE
     }
   }
+  colnames(out) <- paste(data_type, colnames(out), sep = '_')
   return(out)
 }
 
@@ -96,8 +102,7 @@ loss <- function(data_type) {
     x <- clin %>% select(-Subject, -DeltaPASI, -PASI_75)
     x <- model.matrix(~., data = x)
     x <- x[, -1]
-    out <- data_frame(Clinical = fill(data_type, x))
-    return(out)
+    return(fill(data_type, x))
     
   } else if (data_type == 'Blood_mRNA') {
     
@@ -107,8 +112,7 @@ loss <- function(data_type) {
     mat <- calcNormFactors(mat)
     mat <- cpm(mat, log = TRUE, prior.count = 1)
     x <- t(mat)
-    out <- data_frame(Blood_mRNA = fill(data_type, x))
-    return(out)
+    return(fill(data_type, x))
     
   } else if (data_type == 'Lesional_mRNA') {
     
@@ -118,8 +122,7 @@ loss <- function(data_type) {
     mat <- calcNormFactors(mat)
     mat <- cpm(mat, log = TRUE, prior.count = 1)
     x <- t(mat)
-    out <- data_frame(Lesional_mRNA = fill(data_type, x))
-    return(out)
+    return(fill(data_type, x))
     
   } else if (data_type == 'Nonlesional_mRNA') {
     
@@ -129,8 +132,7 @@ loss <- function(data_type) {
     mat <- calcNormFactors(mat)
     mat <- cpm(mat, log = TRUE, prior.count = 1)
     x <- t(mat)
-    out <- data_frame(Nonlesional_mRNA = fill(data_type, x))
-    return(out)
+    return(fill(data_type, x))
     
   } else if (data_type == 'Blood_miRNA') {
     
@@ -140,15 +142,13 @@ loss <- function(data_type) {
     mat <- calcNormFactors(mat)
     mat <- cpm(mat, log = TRUE, prior.count = 1)
     x <- t(mat)
-    out <- data_frame(Blood_miRNA = fill(data_type, x))
-    return(out)
+    return(fill(data_type, x))
     
   } else if (data_type == 'Blood_Proteomics') {
     
-    mat <- log2(prot + 1)
+    mat <- log2(prot)
     x <- t(mat)
-    out <- data_frame(Blood_Proteomics = fill(data_type, x))
-    return(out)
+    return(fill(data_type, x))
     
   }
   
@@ -158,6 +158,6 @@ loss <- function(data_type) {
 data_types <- c('Clinical', 'Blood_Proteomics', 'Blood_miRNA',
                 'Blood_mRNA', 'Lesional_mRNA', 'Nonlesional_mRNA')
 out <- foreach(d = data_types, .combine = cbind) %dopar% loss(d)
-fwrite(out, './Results/ErrContRFE.csv')
+fwrite(out, './Results/ErrCont_RFE.csv')
 
 
