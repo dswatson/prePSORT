@@ -13,7 +13,7 @@ clin <- fread('./Data/Clinical.csv') %>%
   mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.'))
 t2g <- fread('./Data/Hs79.t2g.csv')
 files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.tsv')
-txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread, 
+txi <- tximport(files, type = 'kallisto', tx2gene = t2g, importer = fread, 
                 countsFromAbundance = 'lengthScaledTPM')
 
 # Collapse, filter counts
