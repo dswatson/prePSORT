@@ -3,8 +3,12 @@ library(tidyverse)
 library(ggsci)
 
 # Import data
-df_cat <- read_csv('./Results/err_cat.csv')
-df_cont <- read_csv('./Results/err_cont.csv')
+df_cat <- read_csv('./Results/ErrCat_RFE.csv')
+df_cat <- df_cat[, grepl('Loss', colnames(df_cat))]
+colnames(df_cat) <- gsub('_Loss', '', colnames(df_cat))
+df_cont <- read_csv('./Results/ErrCont_RFE.csv')
+df_cont <- df_cont[, grepl('Loss', colnames(df_cont))]
+colnames(df_cont) <- gsub('_Loss', '', colnames(df_cont))
 brks <- c('Clinical', 'Blood_Proteomics', 'Blood_miRNA',
           'Blood_mRNA', 'Lesional_mRNA', 'Nonlesional_mRNA')
 
