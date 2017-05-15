@@ -38,14 +38,12 @@ y <- as.factor(clin$PASI_75)
 
 # Helper functions
 my_logLoss <- function (data, lev = NULL, model = NULL) {
-  dataComplete <- data[complete.cases(data), ]
-  probs <- as.matrix(dataComplete[, lev, drop = FALSE])
-  inds <- match(dataComplete$obs, colnames(probs))
-  log_loss <- function(obs, pred, eps = 1e-15) {
-    pred <- pmin(pmax(pred, eps), 1 - eps)
-    - (sum(obs * log(pred) + (1 - obs) * log(1 - pred))) / length(obs)
-  }
-  logLoss <- log_loss(inds, probs)
+  data <- data[complete.cases(data), ]
+  pred <- data[, lev[2]]
+  eps <- 1e-15
+  pred <- pmin(pmax(pred, eps), 1 - eps)
+  obs <- ifelse(data$obs == lev[2], 1, 0)
+  logLoss <- -(sum(obs * log(pred) + (1 - obs) * log(1 - pred))) / length(obs)
   c(logLoss = logLoss)
 }
 trCtrl <- trainControl(method = 'cv', summaryFunction = my_logLoss, 
