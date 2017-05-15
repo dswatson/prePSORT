@@ -37,10 +37,21 @@ clin <- fread('./Data/Clin_Baseline.csv')
 y <- as.factor(clin$PASI_75)
 
 # Helper functions
-trCtrl <- trainControl(method = 'cv', summaryFunction = mnLogLoss, 
+my_logLoss <- function (data, lev = NULL, model = NULL) {
+  dataComplete <- data[complete.cases(data), ]
+  probs <- as.matrix(dataComplete[, lev, drop = FALSE])
+  inds <- match(dataComplete$obs, colnames(probs))
+  log_loss <- function(obs, pred, eps = 1e-15) {
+    pred <- pmin(pmax(pred, eps), 1 - eps)
+    - (sum(obs * log(pred) + (1 - obs) * log(1 - pred))) / length(obs)
+  }
+  logLoss <- log_loss(inds, probs)
+  c(logLoss = logLoss)
+}
+trCtrl <- trainControl(method = 'cv', summaryFunction = my_logLoss, 
                        classProbs = TRUE, seeds = tr_seeds)
 my_rfFuncs <- rfFuncs
-my_rfFuncs$summary <- mnLogLoss
+my_rfFuncs$summary <- my_logLoss
 my_rfFuncs$fit <- function(x, y, first, last, ...) {
   randomForest(x, y, ntree = 1000, importance = TRUE, ...)
 }
@@ -50,40 +61,27 @@ my_rfFuncs$rank <- function(object, x, y) {
              var = rownames(imp)) %>%
     arrange(desc(Overall))
 }
-rfeCtrl <- rfeControl(functions = my_rfFuncs, rerank = TRUE, 
-                      method = 'cv', seeds = rfe_seeds)
+rfeCtrl <- rfeControl(functions = my_rfFuncs, method = 'cv', seeds = rfe_seeds)
 subsets <- function(x) {
   round(10 + ((x - 10) / 400) * seq_len(19)^2)
 }
 fill <- function(data_type, x) {
-  out <- data.frame(Loss = rep(NA, 1000),
-                    Tune = 0)
-  success <- FALSE
-  while (!success) {
-    if (data_type == 'Clinical') {
-      fit <- train(x, y, method = 'rf', trControl = trCtrl, 
-                   tuneGrid = data.frame(.mtry = 4:6), metric = 'logLoss')
-    } else {
-      fit <- rfe(x, y, sizes = subsets(ncol(x)), rfeControl = rfeCtrl, 
-                 metric = 'logLoss', maximize = FALSE)
-    }
-    isNA <- which(is.na(out$Loss))
-    if (length(isNA) > 0) {
-      i <- min(isNA)
-      if (is(fit, 'rfe')) {
-        res <- fit$resample %>% filter(Variables == fit$bestSubset)
-        loss <- res$logLoss
-        tune <- res$Variables
-      } else {
-        loss <- fit$resample$logLoss 
-        tune <- fit$bestTune$mtry
-      }
-      out$Loss[i:(i + 9)] <- loss
-      out$Tune[i:(i + 9)] <- tune
-    } else {
-      success <- TRUE
-    }
+  if (data_type == 'Clinical') {
+    fit <- train(x, y, method = 'rf', trControl = trCtrl, 
+                 tuneGrid = data.frame(.mtry = 4:6), metric = 'logLoss')
+  } else {
+    fit <- rfe(x, y, sizes = subsets(ncol(x)), rfeControl = rfeCtrl, 
+               metric = 'logLoss', maximize = FALSE)
   }
+  if (is(fit, 'rfe')) {
+    res <- fit$resample %>% filter(Variables == fit$bestSubset)
+    loss <- res$logLoss
+    tune <- res$Variables
+  } else {
+    loss <- fit$resample$logLoss
+    tune <- fit$bestTune$mtry
+  }
+  out <- data_frame(Loss = loss, Tune = tune)
   colnames(out) <- paste(data_type, colnames(out), sep = '_')
   return(out)
 }
@@ -152,6 +150,6 @@ loss <- function(data_type) {
 data_types <- c('Clinical', 'Blood_Proteomics', 'Blood_miRNA',
                 'Blood_mRNA', 'Lesional_mRNA', 'Nonlesional_mRNA')
 out <- foreach(d = data_types, .combine = cbind) %dopar% loss(d)
-fwrite(out, './Results/ErrCatRFE.csv')
+fwrite(out, './Results/ErrCat_RFE.csv')
 
 

@@ -53,9 +53,12 @@ my_rfFuncs$fit <- function(x, y, first, last, ...) {
 }
 my_rfFuncs$rank <- function(object, x, y) {
   imp <- importance(object, type = 1, scale = FALSE)
-  data_frame(Overall = imp[, 1], 
-             var = rownames(imp)) %>%
-    arrange(desc(Overall)) 
+  df <- data_frame(Overall = imp[, 1], 
+                   var = rownames(imp))
+  if (any(!complete.cases(df))) {
+    df$Overall[which(is.na(df$Overall))] <- median(df$Overall, na.rm = TRUE)
+  }
+  df %>% arrange(desc(Overall))
 }
 rfeCtrl <- rfeControl(functions = my_rfFuncs, rerank = TRUE, 
                       method = 'cv', seeds = rfe_seeds)
@@ -63,33 +66,21 @@ subsets <- function(x) {
   round(10 + ((x - 10) / 400) * seq_len(19)^2)
 }
 fill <- function(data_type, x) {
-  out <- data.frame(Loss = rep(NA, 1000),
-                    Tune = 0)
-  success <- FALSE
-  while (!success) {
     if (data_type == 'Clinical') {
       fit <- train(x, y, method = 'rf', tuneGrid = data.frame(.mtry = 8:10),
                    trControl = trCtrl)
     } else {
       fit <- rfe(x, y, sizes = subsets(ncol(x)), rfeControl = rfeCtrl)
     }
-    isNA <- which(is.na(out$Loss))
-    if (length(isNA) > 0) {
-      i <- min(isNA)
-      if (is(fit, 'rfe')) {
-        res <- fit$resample %>% filter(Variables == fit$bestSubset)
-        loss <- res$logLoss
-        tune <- res$Variables
-      } else {
-        loss <- fit$resample$logLoss 
-        tune <- fit$bestTune$mtry
-      }
-      out$Loss[i:(i + 9)] <- loss
-      out$Tune[i:(i + 9)] <- tune
+    if (is(fit, 'rfe')) {
+      res <- fit$resample %>% filter(Variables == fit$bestSubset)
+      loss <- res$RMSE
+      tune <- res$Variables
     } else {
-      success <- TRUE
+      loss <- fit$resample$RMSE 
+      tune <- fit$bestTune$mtry
     }
-  }
+  out <- data_frame(Loss = loss, Tune = tune)
   colnames(out) <- paste(data_type, colnames(out), sep = '_')
   return(out)
 }
