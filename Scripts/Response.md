@@ -7,7 +7,7 @@ Differential Expression by Biologic Response
 -   [Models](#models)
 -   [Differential Expression Analysis](#differential-expression-analysis)
 
-All analysis was conducted in R version 3.3.3 using the following script. Computations were performed on a MacBook Pro with 16GB of RAM.
+All analysis was conducted in R version 3.4.0 using the following script. Computations were performed on a MacBook Pro with 16GB of RAM and an i7 quad-core processor.
 
 If you haven't already installed the `bioplotr` package, you'll need to do so to reproduce some of the figures below.
 
@@ -20,9 +20,11 @@ library(data.table)
 library(tximport)
 library(edgeR)
 library(limma)
+library(ggplot2)
 library(bioplotr)
+library(ggsci)
 library(qvalue)
-library(tidyverse)
+library(dplyr)
 ```
 
 Import Data
@@ -36,7 +38,7 @@ clin <- fread('./Data/Clinical.csv') %>%
   mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.'))
 t2g <- fread('./Data/Hs79.t2g.csv')
 files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.tsv')
-txi <- tximport(files, type = 'kallisto', tx2gene = t2g, reader = fread, 
+txi <- tximport(files, type = 'kallisto', tx2gene = t2g, importer = fread, 
                 countsFromAbundance = 'lengthScaledTPM')
 ```
 
@@ -187,7 +189,7 @@ Exploratory Data Analysis
 All EDA is conducted on the log2-CPM scale of the normalised count matrix.
 
 ``` r
-mat <- cpm(y, log = TRUE)
+mat <- cpm(y, log = TRUE, prior.count = 1)
 ```
 
 Mean-Variance Trend
@@ -226,7 +228,7 @@ Sample Similarity Matrix
 We build a sample similarity matrix by calculating the pairwise Euclidean distance between all samples in the data. This matrix is then visualised as a heatmap and used to generate a hierarchical clustering dendrogram.
 
 ``` r
-plot_similarity(mat, anno = list('Tissue' = clin$Tissue))
+plot_similarity(mat, group = list('Tissue' = clin$Tissue))
 ```
 
 <p align='center'>
@@ -285,6 +287,7 @@ df <- data_frame(Sample = paste0('S', seq_len(89)),
 # Plot results
 ggplot(df, aes(Sample, Weight, fill = Tissue)) +
   geom_bar(stat = 'identity') + 
+  scale_fill_npg() + 
   geom_hline(yintercept = 1, linetype = 'dashed') + 
   labs(title = 'Library Quality by Tissue') + 
   theme_bw() + 
@@ -438,6 +441,7 @@ It appears there are signs of differential expression at each tissue-time, but t
 ``` r
 ggplot(df, aes(Time, DEgenes, fill = Tissue)) + 
   geom_bar(stat = 'identity', position = 'dodge') + 
+  scale_fill_npg() + 
   labs(title = 'Differential Expression by Tissue and Time',
            y = 'Differentially Expressed Genes (10% FDR)') + 
   theme_bw() + 
