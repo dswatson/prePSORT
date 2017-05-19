@@ -11,7 +11,7 @@ Clusters
 
 All analysis was conducted in R version 3.4.0 using the following script. Computations were performed on a MacBook Pro with 16GB of RAM and an i7 quad-core processor.
 
-If you haven't already installed the `bioplotr` package, you'll need to do so to reproduce some of the figures below.
+If you haven't already installed the `bioplotr` package, you'll need to do so to reproduce the figures below.
 
 ``` r
 # Install bioplotr
