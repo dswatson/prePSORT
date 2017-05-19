@@ -9,7 +9,7 @@ Clusters
 -   [Mutual Information](#mutual-information)
 -   [Heatmap](#heatmap)
 
-All analysis was conducted in R version 3.3.3 using the following script. Computations were performed on a MacBook Pro with 16GB of RAM.
+All analysis was conducted in R version 3.4.0 using the following script. Computations were performed on a MacBook Pro with 16GB of RAM and an i7 quad-core processor.
 
 If you haven't already installed the `bioplotr` package, you'll need to do so to reproduce some of the figures below.
 
@@ -18,15 +18,12 @@ If you haven't already installed the `bioplotr` package, you'll need to do so to
 devtools::install_github('dswatson/bioplotr')
 
 # Load libraries, set seed
-library(data.table)
-library(bioplotr)
 library(limma)
+library(edgeR)
+library(bioplotr)
 library(Rtsne)
 library(cluster)
 library(infotheo)
-library(RColorBrewer)
-library(ggsci)
-library(NMF)
 library(dplyr)
 set.seed(123)
 ```
@@ -34,26 +31,26 @@ set.seed(123)
 Overview
 ========
 
-Once data have been modelled (see [Response]()), we use the outputs of our differential expression analysis to perform supervised and unsupervised clustering on baseline samples in each tissue across all platforms. Our approach is as follows. First, we filter out the bottom half of probes, either by association with biologic response (if supervised) or by leading fold change (if unsupervised). Next, we project the data in two dimensions using *t*-distributed stochastic neighbour embedding (t-SNE) ([van der Maaten & Hinton, 2008](http://www.jmlr.org/papers/volume9/vandermaaten08a/vandermaaten08a.pdf)). Finally, we cluster the samples using *k*-medoids, also known as the PAM algorithm ([Kaufman & Rousseeuw, 1990](https://books.google.co.uk/books/about/Finding_Groups_in_Data.html?id=yS0nAQAAIAAJ)).
+Once data have been modelled (see [Response](https://github.com/dswatson/PSORT/blob/master/Scripts/Response.md)), we use the outputs of our differential expression analysis to perform supervised and unsupervised clustering on baseline samples in each tissue across all platforms. Our approach is as follows. First, we filter out the bottom half of probes, either by association with biologic response (if supervised) or by leading fold change (if unsupervised). Next, we project the data in two dimensions using *t*-distributed stochastic neighbour embedding (t-SNE) ([van der Maaten & Hinton, 2008](http://www.jmlr.org/papers/volume9/vandermaaten08a/vandermaaten08a.pdf)). Finally, we cluster the samples using *k*-medoids, also known as the PAM algorithm ([Kaufman & Rousseeuw, 1990](https://books.google.co.uk/books/about/Finding_Groups_in_Data.html?id=yS0nAQAAIAAJ)).
 
-Ideally, optimal cluster number *k* would be established via a resampling procedure such as consensus clustering ([Monti et al., 2003](https://pdfs.semanticscholar.org/1f29/553ecbaa388b6be3402bc7af28178f5e24ef.pdf)). However, given our limited sample size, we chose to fix *k* = 2 and test for cluster concordance with clinical outcomes. For simplicity's sake, we will work through a single example here. A complete analysis loop that executes all clustering steps in parallel may be found in this repository's accompanying Clusters.R script.
+Ideally, optimal cluster number *k* would be established via a resampling procedure such as consensus clustering ([Monti et al., 2003](https://pdfs.semanticscholar.org/1f29/553ecbaa388b6be3402bc7af28178f5e24ef.pdf)). However, given our limited sample size, we choose to fix *k* = 2 and test for cluster concordance with clinical outcomes. For simplicity's sake, we work through a single example here using baseline blood miRNA data. A complete analysis loop that executes all clustering steps in parallel may be found in this repository's accompanying [Clusters.R](https://github.com/dswatson/PSORT/blob/master/Scripts/Clusters.R) script.
 
 Load, Prepare Data
 ==================
 
 ``` r
 # Import data
-mat <- readRDS('./Data/mat_prot.rds')            # Voom transformed counts
-fit <- readRDS('./Data/fit_prot.rds')            # Limma model object
-clin <- read.csv('./Data/Clinical.csv') %>%      # Clinical data
-  distinct(Subject, DeltaPASI, PASI_75)
+mat <- readRDS('./Data/miRNA_RawCounts.rds')     # Raw miRNA counts
+clin <- read.csv('./Data/Clin_Baseline.csv')     # Clinical data
 
-# Restrict focus to baseline samples
-mat <- mat[, grep('wk00', colnames(mat))]
+# Restrict focus to baseline blood samples
+mat <- mat[, grepl('wk00', colnames(mat))]
 colnames(mat) <- gsub('_wk00', '', colnames(mat))
 
-# Median centre the data
-mat <- sweep(mat, 1, apply(mat, 1, median))
+# Remove underexpressed probes, normalize matrix
+keep <- rowSums(cpm(mat) > 1) >= 3
+mat <- DGEList(mat[keep, ])
+mat <- calcNormFactors(mat)
 
 # Restrict focus to top half of probes
 n_probes <- round(0.5 * nrow(mat))
@@ -62,23 +59,49 @@ n_probes <- round(0.5 * nrow(mat))
 Filtering
 =========
 
-This is where supervised and unsupervised approaches diverge. For the former, we simply take the top half of all probes as ranked by *p*-value of the relevant differential expression test.
+This is where supervised and unsupervised approaches diverge. For the former, we simply take the top half of all probes as ranked by *p*-value of the relevant differential expression test. To recreate our [Response](https://github.com/dswatson/PSORT/blob/master/Scripts/Response.md) analysis, we winsorise the DeltaPASI distribution and regress it onto probewise counts following voom transformation [Law et al., 2014](https://genomebiology.biomedcentral.com/articles/10.1186/gb-2014-15-2-r29).
 
 ``` r
-top <- topTable(fit, coef = 'wk00.Response', number = Inf, sort.by = 'p')
-hits <- rownames(top)[seq_len(n_probes)]
+# Winsorise DeltaPASI distribution
+winsorise <- function(x, multiple = 2) {
+  y <- x - median(x)
+  lim <- mad(y, center = 0) * multiple
+  y[y > lim] <- lim
+  y[y < -lim] <- -lim
+  y <- y + median(x)
+  return(y)
+}
+clin <- clin %>% mutate(DeltaPASI = winsorise(DeltaPASI))
+
+# Build limma model
+des <- model.matrix(~ DeltaPASI, data = clin)
+v <- voom(mat, des)
+fit <- eBayes(lmFit(v, des))
+
+# Extract top half of probes by differential expression
+top <- topTable(fit, coef = 'DeltaPASI', number = n_probes, sort.by = 'p')
+hits <- rownames(top)
+```
+
+Distance matrices should be calculated based on centred data so as to emphasise relative differences across samples. We therefore subtract the median of each probe's samplewise distribution from all rows of the voom transformed counts.
+
+``` r
+# Median centre data
+mat <- sweep(v$E, 1, apply(v$E, 1, median))
+
+# Create supervised distance matrix
 dm_sup <- dist(t(mat[hits, ]))
 ```
 
-For unsupervised filtering, we use the leading log fold change method originally developed by the authors of the `limma` package to aid in multidimensional scaling plots ([Ritchie et al., 2015](https://www.ncbi.nlm.nih.gov/pubmed/25605792)). The key insight to this approach is that distance matrices need not be calculated using the same data for all comparisons. Instead, each pairwise distance may be based on the probes for which those two samples most differ. While the `limma` authors employ this method in conjunction with root-mean-square distance, we adopt the Euclidean distance metric here. In fact, the leading fold change filter is a powerful and general tool that can be applied with any distance measure.
+For unsupervised filtering, we use the leading log fold change method originally developed by the authors of the `limma` package to aid in multidimensional scaling plots ([Ritchie et al., 2015](https://www.ncbi.nlm.nih.gov/pubmed/25605792)). The key insight to this approach is that distance matrices need not be calculated using the same data for all comparisons. Instead, each pairwise distance may be based on the probes for which those two samples most differ. While the `limma` authors employ this method in conjunction with root-mean-square deviation, we adopt the Euclidean distance metric here. In fact, the leading fold change filter is a powerful and general tool that can be applied with any distance measure.
 
 ``` r
-# Create distance matrix
+# Create unsupervised distance matrix
 dm_unsup <- matrix(nrow = ncol(mat), ncol = ncol(mat))
 for (i in 2:ncol(mat)) {
   for (j in 1:(i - 1)) {
     # Find top most differentially expressed genes between samples i and j
-    hits <- order((mat[, i] - mat[, j])^2, decreasing = TRUE)[1:n_probes]
+    hits <- order((mat[, i] - mat[, j])^2, decreasing = TRUE)[seq_len(n_probes)]
     # Calculate the Euclidean distance between i and j using just those top genes
     dm_unsup[i, j] <- sqrt(sum((mat[hits, i] - mat[hits, j])^2))
   }
@@ -88,12 +111,12 @@ for (i in 2:ncol(mat)) {
 t-SNE
 =====
 
-We now perform t-SNE on the distance matrix. This algorithm embeds a high-dimensional manifold in just two dimensions with a focus on preserving local structure, which makes it especially attractive for clustering omic data. We can visualise the projection using the `plot_tsne` function from the `bioplotr` package.
+We now perform t-SNE on the respective distance matrices. This algorithm embeds a high-dimensional manifold in just two dimensions with a focus on preserving local structure, which makes it especially attractive for clustering omic data. We can visualise the projection using the `plot_tsne` function from the `bioplotr` package.
 
 ``` r
-plot_tsne(mat[hits, ], group = list('PASI 75' = clin$PASI_75), 
+plot_tsne(v$E[hits, ], group = list('PASI 75' = clin$PASI_75), 
           perplexity = 2, label = TRUE,
-          title = 'Supervised Filtering: Proteomics, wk00')
+          title = 'Supervised Filtering: Blood miRNA, wk00')
 ```
 
 <p align='center'>
@@ -101,16 +124,16 @@ plot_tsne(mat[hits, ], group = list('PASI 75' = clin$PASI_75),
 </p>
 
 ``` r
-plot_tsne(mat, group = list('PASI 75' = clin$PASI_75), 
+plot_tsne(v$E, group = list('PASI 75' = clin$PASI_75), 
           top = n_probes, perplexity = 2, label = TRUE,
-          title = 'Unsupervised Filtering: Proteomics, wk00')
+          title = 'Unsupervised Filtering: Blood miRNA, wk00')
 ```
 
 <p align='center'>
 <img src="Clusters_files/figure-markdown_github/tsne-2.png" style="display: block; margin: auto;" />
 </p>
 
-We find in both plots that responders clearly cluster together, although they appear to be quite close to samples S09 and S11 as well, who did not achieve PASI 75 over the course of the study.
+We find in the supervised plot that responders tend to fall in the top half of the figure, but they are not especially well segratated from nonresponders in this regard. More salient is the close clustering of subjects S03 and S05 on the one hand, and S04 and S08 on the other. The unsupervised t-SNE plot is somewhat similar, especially with regard to these couplings, although samples have been reconfigured in the subspace. It is likely that with *k* = 3 clusters, these two groupings would be nearly if not perfectly concordant; we have imposed a maximum cluster number of 2, however, which may result in different splits.
 
 Partitioning Around Medoids
 ===========================
@@ -141,22 +164,22 @@ table(supervised, unsupervised)
 
     ##           unsupervised
     ## supervised 1 2
-    ##          1 5 0
-    ##          2 0 5
+    ##          1 6 2
+    ##          2 2 0
 
-Evidently the two methods perfectly coincide. To measure the magnitude of this concordance and compare it with alternative clusterings, we calculate the [mutual information](https://en.wikipedia.org/wiki/Mutual_information) between the two groups in bits.
+Both groupings place the majority of their samples into the first group, although there is no agreement as to which samples belong to the minority cluster. To measure the magnitude of this concordance and compare it with alternative clusterings, we calculate the [mutual information](https://en.wikipedia.org/wiki/Mutual_information) between the two groups in bits.
 
 ``` r
 # Calculate the mutual information between clusterings
 mi <- mutinformation(supervised, unsupervised)
 
 # Convert from nats to bits
-(mi <- natstobits(mi))
+natstobits(mi)
 ```
 
-    ## [1] 1
+    ## [1] 0.07290559
 
-With *k* = 2, the maximal mutual information between groupings is 1 bit. Since these two clusterings are perfectly concordant, this result is unsurprising.
+With *k* = 2, the maximum possible mutual information between groupings is 1 bit. We can therefore interpret this number as a percentage and say there is approximately 7.3% concordance between supervised and unsupervised clusterings of blood mRNA samples.
 
 Heatmap
 =======
@@ -165,24 +188,16 @@ These cluster assignments can be visualised along with clinical information as a
 
 ``` r
 # Trim matrix
-top_quarter <- round(0.25 * nrow(mat)) 
-hits <- rownames(top)[seq_len(top_quarter)]
-mat <- mat[hits, ]
-
-# Prepare colour palettes
-rb <- colorRampPalette(rev(brewer.pal(10, 'RdBu')))(n = 256)
-greys <- colorRampPalette(brewer.pal(9, 'Greys'))(n = 256)
-d3 <- pal_d3()(6)
-cols <- list(greys, d3[1:2], d3[3:4], d3[5:6])
+top_25 <- round(0.25 * nrow(v$E))
+hits <- hits[seq_len(top_25)]
+mat <- v$E[hits, ]
 
 # Build heatmap
-aheatmap(mat, distfun = 'pearson', scale = 'row', col = rb, hclustfun = 'average',
-         main = paste0('Top 25% of Probes by Response:\n Proteomics, wk00'),
-         annCol = list('Delta PASI' = clin$DeltaPASI,
-                          'PASI 75' = clin$PASI_75,
-                       'Supervised' = as.factor(supervised),
-                     'Unsupervised' = as.factor(unsupervised)),
-         annColors = cols, border_color = 'black')
+plot_heatmap(mat, group = list('Supervised' = as.factor(supervised),
+                             'Unsupervised' = as.factor(unsupervised),
+                                  'PASI 75' = clin$PASI_75), 
+             covar = list('Delta PASI' = clin$DeltaPASI),
+             title = 'Top 25% of Probes by Response:\n Blood miRNA, wk00')
 ```
 
 <p align='center'>
