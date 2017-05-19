@@ -11,9 +11,9 @@ library(dplyr)
 mat <- readRDS('./Data/mat_mRNA.rds')
 fit <- readRDS('./Data/fit_mRNA.rds')
 clin <- read.csv('./Data/Clinical.csv')
-sup <- read.csv('./Results/Clusters/Supervised.csv') 
+sup <- read.csv('./Results/SupervisedClusters.csv') 
 sup <- sup[, grep('mRNA', colnames(sup))]
-unsup <- read.csv('./Results/Clusters/Unsupervised.csv')
+unsup <- read.csv('./Results/UnsupervisedClusters.csv')
 unsup <- unsup[, grep('mRNA', colnames(unsup))]
 
 # Prep data, colour palettes
@@ -32,14 +32,14 @@ for (coef in coefs) {
   pheno <- clin %>% filter(Tissue == tissue, Time == 'wk00')
   top <- mat[genes, match(pheno$Sample, colnames(mat))]
   colnames(top) <- gsub('\\..*', '', colnames(top))
-  pdf(paste0('./Results/Heatmaps/', tissue, '_wk00.pdf'), height = 8, width = 5)
+  pdf(paste0('./Results/Figures/', tissue, '_wk00.pdf'), height = 8, width = 5)
   aheatmap(top, distfun = 'pearson', scale = 'row', col = rb, hclustfun = 'average',
            main = paste0('Top 1% of Genes by Response:\n', tissue, ', wk00'),
            annCol = list('Delta PASI' = pheno$DeltaPASI,
                             'PASI 75' = pheno$PASI_75,
                          'Supervised' = sup[, grep(tissue, colnames(sup))],
                        'Unsupervised' = unsup[, grep(tissue, colnames(unsup))]),
-           annColors = cols, border_color = 'black')
+           annColors = cols, border_color = 'grey60')
   dev.off()
 }
 
