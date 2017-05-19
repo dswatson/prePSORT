@@ -1,12 +1,14 @@
 ### mRNA ###
 
-# Load libraries
+# Load libraries, register cores
 library(data.table)
 library(tximport)
 library(edgeR)
 library(limma)
 library(qvalue)
 library(dplyr)
+library(doMC)
+registerDoMC(4)
 
 # Import data
 clin <- fread('./Data/Clinical.csv') %>%
@@ -16,7 +18,7 @@ files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.tsv')
 txi <- tximport(files, type = 'kallisto', tx2gene = t2g, importer = fread, 
                 countsFromAbundance = 'lengthScaledTPM')
 
-# Collapse, filter counts
+# Collapse, filter, normalize counts
 keep <- rowSums(cpm(txi$counts) > 1) >= 9
 y <- DGEList(txi$counts[keep, ])
 y <- calcNormFactors(y)
@@ -63,8 +65,8 @@ icc <- duplicateCorrelation(v, des, block = clin$Subject.Tissue)
 fit <- lmFit(v, des, correlation = icc$cor, block = clin$Subject.Tissue)
 fit <- eBayes(fit, robust = TRUE)
 
-# Export
-for (j in colnames(des)[10:18]) res(j)
+# Export in parallel
+foreach (j = colnames(des)[10:18]) %dopar% res(j)
 saveRDS(v$E, './Data/mat_mRNA.rds')
 saveRDS(fit, './Data/fit_mRNA.rds')
 
