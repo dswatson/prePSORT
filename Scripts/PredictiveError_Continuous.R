@@ -1,4 +1,4 @@
-### PREDICTIVE POWER BY DATA TYPE
+### ERROR BY DATA TYPE
 ### Continuous Response
 
 # Load libraries, register cores
@@ -9,7 +9,7 @@ library(caret)
 library(edgeR)
 library(dplyr)
 library(doMC)
-registerDoMC(cores = 20)
+registerDoMC(4)
 
 # Set seeds
 set.seed(123)
