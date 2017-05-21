@@ -37,19 +37,19 @@ clin <- fread('./Data/Clin_Baseline.csv')
 y <- as.factor(clin$PASI_75)
 
 # Helper functions
-my_logLoss <- function (data, lev = NULL, model = NULL) {
+cross_entropy <- function(data, lev = NULL, model = NULL) {
   data <- data[complete.cases(data), ]
   pred <- data[, lev[2]]
   eps <- 1e-15
   pred <- pmin(pmax(pred, eps), 1 - eps)
   obs <- ifelse(data$obs == lev[2], 1, 0)
-  logLoss <- -(sum(obs * log(pred) + (1 - obs) * log(1 - pred))) / length(obs)
-  c(logLoss = logLoss)
+  ce <- -(sum(obs * log(pred) + (1 - obs) * log(1 - pred))) / length(obs)
+  c(cross_entropy = ce)
 }
-trCtrl <- trainControl(method = 'cv', summaryFunction = my_logLoss, 
+trCtrl <- trainControl(method = 'cv', summaryFunction = cross_entropy, 
                        classProbs = TRUE, seeds = tr_seeds)
 my_rfFuncs <- rfFuncs
-my_rfFuncs$summary <- my_logLoss
+my_rfFuncs$summary <- cross_entropy
 my_rfFuncs$fit <- function(x, y, first, last, ...) {
   randomForest(x, y, ntree = 1000, importance = TRUE, ...)
 }
@@ -61,22 +61,22 @@ my_rfFuncs$rank <- function(object, x, y) {
 }
 rfeCtrl <- rfeControl(functions = my_rfFuncs, method = 'cv', seeds = rfe_seeds)
 subsets <- function(x) {
-  round(10 + ((x - 10) / 400) * seq_len(19)^2)
+  round(10 + ((x - 10) / 20^2.5) * seq_len(19)^2.5)
 }
 fill <- function(data_type, x) {
   if (data_type == 'Clinical') {
     fit <- train(x, y, method = 'rf', trControl = trCtrl, 
-                 tuneGrid = data.frame(.mtry = 4:6), metric = 'logLoss')
+                 tuneGrid = data.frame(.mtry = 4:6), metric = 'cross_entropy')
   } else {
     fit <- rfe(x, y, sizes = subsets(ncol(x)), rfeControl = rfeCtrl, 
-               metric = 'logLoss', maximize = FALSE)
+               metric = 'cross_entropy', maximize = FALSE)
   }
   if (is(fit, 'rfe')) {
     res <- fit$resample %>% filter(Variables == fit$bestSubset)
-    loss <- res$logLoss
+    loss <- res$cross_entropy
     tune <- res$Variables
   } else {
-    loss <- fit$resample$logLoss
+    loss <- fit$resample$cross_entropy
     tune <- fit$bestTune$mtry
   }
   out <- data_frame(Loss = loss, Tune = tune)

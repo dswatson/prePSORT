@@ -63,7 +63,7 @@ my_rfFuncs$rank <- function(object, x, y) {
 rfeCtrl <- rfeControl(functions = my_rfFuncs, rerank = TRUE, 
                       method = 'cv', seeds = rfe_seeds)
 subsets <- function(x) {
-  round(10 + ((x - 10) / 400) * seq_len(19)^2)
+  round(10 + ((x - 10) / 20^2.5) * seq_len(19)^2.5)
 }
 fill <- function(data_type, x) {
     if (data_type == 'Clinical') {
