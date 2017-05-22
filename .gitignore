@@ -12,6 +12,7 @@ Proteomics/
 Tissue/
 Time/
 Combos/
+Response.Rmd
 Clinical.csv
 Clinical_old.csv
 LCPM_mat.csv
@@ -24,3 +25,11 @@ Adalimumab_EDA.Rmd
 Proteomics_EDA.Rmd
 Heatmaps.Rmd
 Proteomics_EDA.R
+ErrCont_RFE.csv
+ErrCat_RFE.csv
+Algo2.png
+Clusters.Rmd
+SupervisedClusters.csv
+UnsupervisedClusters.csv
+PredictiveModelling.Rmd
+Figures/
