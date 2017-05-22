@@ -72,12 +72,10 @@ fill <- function(data_type, x) {
     } else {
       fit <- rfe(x, y, sizes = subsets(ncol(x)), rfeControl = rfeCtrl)
     }
+    loss <- fit$resample$RMSE
     if (is(fit, 'rfe')) {
-      res <- fit$resample %>% filter(Variables == fit$bestSubset)
-      loss <- res$RMSE
-      tune <- res$Variables
+      tune <- fit$bestSubset
     } else {
-      loss <- fit$resample$RMSE 
       tune <- fit$bestTune$mtry
     }
   out <- data_frame(Loss = loss, Tune = tune)

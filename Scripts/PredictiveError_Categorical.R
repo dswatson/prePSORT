@@ -72,11 +72,10 @@ fill <- function(data_type, x) {
     fit <- rfe(x, y, sizes = subsets(ncol(x)), rfeControl = rfeCtrl, 
                metric = 'cross_entropy', maximize = FALSE)
   }
+  loss <- fit$resample$cross_entropy
   if (is(fit, 'rfe')) {
-    loss <- fit$resample$cross_entropy
     tune <- fit$bestSubset
   } else {
-    loss <- fit$resample$cross_entropy
     tune <- fit$bestTune$mtry
   }
   out <- data_frame(Loss = loss, Tune = tune)
