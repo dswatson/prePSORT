@@ -4,6 +4,7 @@
 .Ruserdata
 .Rapp.history
 PSORT.Rproj
+Data/
 Other/
 RawCounts/
 Adalimumab/
@@ -33,3 +34,4 @@ SupervisedClusters.csv
 UnsupervisedClusters.csv
 PredictiveModelling.Rmd
 Figures/
+Response/
