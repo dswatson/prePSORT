@@ -66,15 +66,15 @@ subsets <- function(x) {
 fill <- function(data_type, x) {
   if (data_type == 'Clinical') {
     fit <- train(x, y, method = 'rf', trControl = trCtrl, 
-                 tuneGrid = data.frame(.mtry = 4:6), metric = 'cross_entropy')
+                 tuneGrid = data.frame(.mtry = 4:6), 
+                 metric = 'cross_entropy', maximize = FALSE)
   } else {
     fit <- rfe(x, y, sizes = subsets(ncol(x)), rfeControl = rfeCtrl, 
                metric = 'cross_entropy', maximize = FALSE)
   }
   if (is(fit, 'rfe')) {
-    res <- fit$resample %>% filter(Variables == fit$bestSubset)
-    loss <- res$cross_entropy
-    tune <- res$Variables
+    loss <- fit$resample$cross_entropy
+    tune <- fit$bestSubset
   } else {
     loss <- fit$resample$cross_entropy
     tune <- fit$bestTune$mtry
