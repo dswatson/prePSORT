@@ -136,7 +136,9 @@ Exploring the Feature Space
 
 Recursive feature elimination (RFE) is a general approach to variable selection. The algorithm can be outlined in pseudocode as follows:
 
-![](Algo2.png)
+<p align='center'>
+<img src="PredictiveModelling_files/figure-markdown_github/RFE.png" style="display: block; margin: auto;" />
+</p
 
 For more on RFE, see the instructive chapter in `caret`'s [bookdown documentation](https://topepo.github.io/caret/recursive-feature-elimination.html) or chapter 19 of the accompanying Springer textbook, *Applied Predictive Modeling* ([Kuhn & Johnson, 2013](http://appliedpredictivemodeling.com/)).
 
