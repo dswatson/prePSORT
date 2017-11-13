@@ -14,8 +14,8 @@ registerDoMC(4)
 clin <- fread('./Data/Clinical.csv') %>%
   mutate(Subject.Tissue = paste(Subject, Tissue, sep = '.'))
 t2g <- fread('./Data/Hs79.t2g.csv')
-files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.tsv')
-txi <- tximport(files, type = 'kallisto', tx2gene = t2g, importer = fread, 
+files <- file.path('./Data/RawCounts', clin$Sample, 'abundance.h5')
+txi <- tximport(files, type = 'kallisto', tx2gene = t2g, 
                 countsFromAbundance = 'lengthScaledTPM')
 
 # Collapse, filter, normalize counts
