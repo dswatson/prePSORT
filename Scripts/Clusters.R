@@ -4,6 +4,7 @@
 library(data.table)
 library(limma)
 library(edgeR)
+library(matrixStats)
 library(wordspace)
 library(Rtsne)
 library(cluster)
@@ -78,13 +79,13 @@ clusters <- function(data_type, supervised = TRUE) {
     if (grepl('RNA', data_type)) {
       mat <- mat$E
     }
-    mat <- sweep(mat, 1, apply(mat, 1, median))
+    mat <- mat - rowMedians(mat)
     dm <- dist.matrix(t(mat), method = 'euclidean')
   } else {                                       # By leading fold change
     if (grepl('RNA', data_type)) {
       mat <- cpm(mat, log = TRUE, prior.count = 1)
     }
-    mat <- sweep(mat, 1, apply(mat, 1, median))
+    mat <- mat - rowMedians(mat)
     dm <- matrix(nrow = ncol(mat), ncol = ncol(mat))
     for (i in 2:ncol(mat)) {
       for (j in 1:(i - 1)) {
