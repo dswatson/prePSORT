@@ -61,7 +61,9 @@ my_rfFuncs$rank <- function(object, x, y) {
 }
 rfeCtrl <- rfeControl(functions = my_rfFuncs, method = 'cv', seeds = rfe_seeds)
 subsets <- function(x) {
-  round(10 + ((x - 10) / 20^2.5) * seq_len(19)^2.5)
+  tmp <- round(10 + ((x - 10) / 50^2.5) * seq_len(49)^2.5)
+  out <- tmp[c(seq_len(30), seq(32, 48, 2))]
+  return(out)
 }
 fill <- function(data_type, x) {
   if (data_type == 'Clinical') {
@@ -148,5 +150,9 @@ data_types <- c('Clinical', 'Blood_Proteomics', 'Blood_miRNA',
                 'Blood_mRNA', 'Lesional_mRNA', 'Nonlesional_mRNA')
 out <- foreach(d = data_types, .combine = cbind) %dopar% loss(d)
 fwrite(out, './Results/ErrCat_RFE.csv')
+
+
+### ADD: TX_3TISSUE, BLOOD_3PLATFORM, AND ALL
+### May have to use a different variable ranking procedure for this
 
 
